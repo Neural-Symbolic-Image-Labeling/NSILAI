@@ -42,7 +42,9 @@ def pretrain():
     json_res = pretrain_label(decoded_image_data)
 
     # Saving the output json to specific image
-    target.interpretation = json_res
+    data = json.load(json_res)
+    interpretation = {k: data[0][k] for k in ['object', 'overlap'] if k in data[0]}
+    target.interpretation = interpretation
 
     return render_template('showgallery.html', image=[target])
 
