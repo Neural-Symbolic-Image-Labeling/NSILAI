@@ -1,0 +1,11 @@
+<!doctype html>
+<title>PyMongo Sample</title>
+<h1>Image:</h1>
+<ul>
+{% for image in target %}
+    <li>{{ image.name }}</li>
+    <li>{{ image.data }}</li>
+    <li>{{ image.interpretation }}</li>
+
+{% endfor %}
+</ul>

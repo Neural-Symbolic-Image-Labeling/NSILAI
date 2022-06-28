@@ -30,6 +30,8 @@ def pretrain():
     image_id = request.args.get('_id')
     # base64_img_bytes = image_id.encode('utf-8')
     target = mongo.db.image.find_one({'_id': image_id})
+    if target is None:
+        return 'No image found!'
     base64_img_bytes = target.data
     base64_img = base64_img_bytes[base64_img_bytes.rfind(','):]
 
@@ -40,6 +42,11 @@ def pretrain():
     json_res = pretrain_label(decoded_image_data)
 
     # Saving the output json to specific image
+    target.interpretation = json_res
+
+    return render_template('showgallery.html', image=[target])
+
+
 
 
 
