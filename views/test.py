@@ -1,18 +1,18 @@
 from app import app
 from flask import jsonify, request
 import base64
-import json
-
-with open('data.json', 'r') as json_file:
-    data = json.load(json_file)
-
-# print(data)
-
-s = {k: data[0][k] for k in ['object', 'overlap'] if k in data[0]}
-# print(data[0][1:3])
-print(s)
+# import json
 #
-print(len(s))
+# with open('data.json', 'r') as json_file:
+#     data = json.load(json_file)
+#
+# # print(data)
+#
+# s = {k: data[0][k] for k in ['object', 'overlap'] if k in data[0]}
+# # print(data[0][1:3])
+# print(s)
+# #
+# print(len(s))
 # @app.route('/test', methods=['GET'])
 # def test():
 #     return jsonify("Hello World!")

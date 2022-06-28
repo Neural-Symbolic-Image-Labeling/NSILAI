@@ -2,10 +2,24 @@
 <title>PyMongo Sample</title>
 <h1>Image:</h1>
 <ul>
-{% for image in target %}
-    <li>{{ image.name }}</li>
-    <li>{{ image.data }}</li>
-    <li>{{ image.interpretation }}</li>
+    <li>{{ target['name']}}</li>
+    <li>{{ target.data }}</li>
+    <li>Interpretation: object</li>
+    <ul>
+    {% for object in target.interpretation.object %}
+        <li>{{ object.coordinate }}</li>
+        <li>{{ object.name }}</li>
+        <li>{{ object.prob }}</li>
+    {% endfor %}
+    </ul>
 
-{% endfor %}
+    <li>Interpretation: overlap</li>
+    <ul>
+    {% for object in target.interpretation.overlap %}
+        <li>{{ object.idA }}</li>
+        <li>{{ object.idB }}</li>
+        <li>{{ object.area }}</li>
+    {% endfor %}
+    </ul>
+
 </ul>

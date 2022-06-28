@@ -22,6 +22,23 @@ mongo = PyMongo(app)
 
 @app.route('/flaskadmin/pretrainedmodel', methods=['GET'])
 def input_image():
+    # Only for testing
+    image = {'_id': '123', 'name': 'test',
+             'data': 'data:/image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAA' \
+            'LEwEAmpwYAAAB1klEQVQ4jY2TTUhUURTHf+fy/HrjhNEX2KRGiyIXg8xgSURuokX' \
+            'LxFW0qDTaSQupkHirthK0qF0WQQQR0UCbwCQyw8KCiDbShEYLJQdmpsk3895p4aS' \
+            'v92ass7pcfv/zP+fcc4U6kXKe2pTY3tjSUHjtnFgB0VqchC/SY8/293S23f+6VEj' \
+            '9KKwCoPDNIJdmr598GOZNJKNWTic7tqb27WwNuuwGvVWrAit84fsmMzE1P1+1TiK' \
+            'MVKvYUjdBvzPZXCwXzyhyWNBgVYkgrIow09VJMznpyebWE+Tdn9cEroBSc1JVPS+' \
+            '6moh5Xyjj65vEgBxafGzWetTh+rr1eE/c/TMYg8hlAOvI6JP4KmwLgJ4qD0TIbli' \
+            'TB+sunjkbeLekKsZ6Zc8V027aBRoBRHVoduDiSypmGFG7CrcBEyDHA0ZNfNphC0D' \
+            '6amYa6ANw3YbWD4Pn3oIc+EdL36V3od0A+MaMAXmA8x2Zyn+IQeQeBDfRcUw3B+2' \
+            'PxwZ/EdtTDpCPQLMh9TKx0k3pXipEVlknsf5KoNzGyOe1sz8nvYtTQT6yyvTjIax' \
+            'smHGB9pFx4n3jIEfDePQvCIrnn0J4B/gA5J4XcRfu4JZuRAw3C51OtOjM3l2bMb8' \
+            'Br5eXCsT/w/EAAAAASUVORK5CYII=',
+             'interpretation': []}
+    mongo.db.image.insert_one(image)
+
     return render_template("input_image.html")
 
 
@@ -32,24 +49,37 @@ def pretrain():
     target = mongo.db.image.find_one({'_id': image_id})
     if target is None:
         return 'No image found!'
-    base64_img_bytes = target.data
+    base64_img_bytes = target['data']
     base64_img = base64_img_bytes[base64_img_bytes.rfind(','):]
 
     decoded_image_data = base64.b64decode(base64_img)
     # bin_im = "".join(["{:08b}".format(x) for x in decoded_image_data])
 
     # Run pretrained model
-    json_res = pretrain_label(decoded_image_data)
+    # json_res = pretrain_label(decoded_image_data)
 
     # Saving the output json to specific image
-    data = json.load(json_res)
+    # data = json.load(json_res)
+
+    # For testing
+    data = pretrain_label(decoded_image_data)
+    # data = json.load(data)
     interpretation = {k: data[0][k] for k in ['object', 'overlap'] if k in data[0]}
-    target.interpretation = interpretation
+    # print(interpretation)
+    new_int = { '$set': {'interpretation': interpretation}}
+    mongo.db.image.update_one(target, new_int)
 
-    return render_template('showgallery.html', image=[target])
+    return render_template('showgallery.html', target=target)
 
 
+@app.route('/flaskadmin/selectset', methods=['GET'])
+def select_set():
+    return render_template('/')
 
+
+@app.route('/flaskadmin/foil', methods=['GET'])
+def train_rule():
+    return render_template('/')
 
 
 
