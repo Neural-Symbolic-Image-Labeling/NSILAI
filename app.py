@@ -15,7 +15,7 @@ cors = CORS(app, resources={r"/api/*": {"origins": os.getenv("CORS_ORIGINS", "*"
 app.config.update(
     MONGO_HOST='localhost',
     MONGO_PORT=27017,
-    MONGO_URI='mongodb://localhost:27017/flask'
+    MONGO_URI='mongodb://localhost:27017/NISL'
 )
 
 mongo = PyMongo(app)
@@ -27,11 +27,20 @@ def input_image():
 
 @app.route('/flaskadmin/pretrain', methods=['GET'])
 def pretrain():
-    image_url = request.args.get('URL')
-    base64_img_bytes = image_url.encode('utf-8')
-    decoded_image_data = base64.b64decode(base64_img_bytes)
-    bin_im = "".join(["{:08b}".format(x) for x in decoded_image_data])
-    json_res = pretrain_label(bin_im)
+    image_id = request.args.get('_id')
+    # base64_img_bytes = image_id.encode('utf-8')
+    target = mongo.db.image.find_one({'_id': image_id})
+    base64_img_bytes = target.data
+    base64_img = base64_img_bytes[base64_img_bytes.rfind(','):]
+
+    decoded_image_data = base64.b64decode(base64_img)
+    # bin_im = "".join(["{:08b}".format(x) for x in decoded_image_data])
+
+    # Run pretrained model
+    json_res = pretrain_label(decoded_image_data)
+
+    # Saving the output json to specific image
+
 
 
 
