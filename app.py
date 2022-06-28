@@ -3,6 +3,7 @@ from flask_cors import CORS
 from flask_pymongo import PyMongo
 import base64
 from views.pretrain import pretrain_label
+from views.foil import foil
 
 import os
 
@@ -74,15 +75,39 @@ def pretrain():
 
 @app.route('/flaskadmin/selectset', methods=['GET'])
 def select_set():
-    return render_template('/')
+    return render_template('selectset.html')
 
 
 @app.route('/flaskadmin/foil', methods=['GET'])
 def train_rule():
-    return render_template('/')
+    set_name = request.args.get('set')
+    # May be modified by the schema
+    target_set = mongo.db.ImageSet.find_one({'name': set_name})
+    image_ids = target_set['images']
+    lst = []
+    index = 0
+    for img_id in image_ids:
+        img = mongo.db.image.find_one({'_id': img_id})
+        img_dict = {'imageID': index, 'type': set_name, 'object': img['interpretation']['object'],
+                    'overlap': img['interpretation']['overlap']}
+        lst.append(img_dict)
+        index += 1
+    rule = foil(lst)
 
+    # What is the rule located in database? Collection?
+    target_rule = mongo.db.Workspance.Rule.find_one({'label': set_name})
+    if target_rule is None:
+        rule = {
+            'label': set_name,
+            'value': rule,
+        }, {'_id': 'false'}
 
+        mongo.db.Workspance.Rule.insert(rule)
+    else:
+        new_rule = {'$set': {'value': rule}}
+        mongo.db.image.update_one(target_rule, new_rule)
 
+    return render_template('Success.html', target=target_rule)
 
 
 @app.route('/flaskadmin')
