@@ -83,6 +83,8 @@ def train_rule():
     set_name = request.args.get('set')
     # May be modified by the schema
     target_set = mongo.db.ImageSet.find_one({'name': set_name})
+    if target_set is None:
+        return 'No such image set!'
     image_ids = target_set['images']
     lst = []
     index = 0
@@ -94,7 +96,7 @@ def train_rule():
         index += 1
     rule = foil(lst)
 
-    # What is the rule located in database? Collection?
+    # Where is the rule located in database? Collection?
     target_rule = mongo.db.Workspance.Rule.find_one({'label': set_name})
     if target_rule is None:
         rule = {
