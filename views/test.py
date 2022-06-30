@@ -51,6 +51,36 @@ import base64
 #     new_rule = {'$set': {'value': rule}}
 #     target_rule.append(new_rule)
 
+#################### Testing for foil api ##################
+
+# body = {
+#     'workspacename': '123',
+#     'collectionname': '123'
+# }
+# wrk = {
+#     'name': '123',
+#     'collections': [{
+#         'name': '123',
+#         'rules': []
+#     },
+#         {
+#             'name': '456',
+#              'rules': [1, 2, 3]
+#         }]
+#
+# }
+#
+# mongo.db.Workspace.insert_one(wrk)
+# wrksp = mongo.db.Workspace.find_one({'name': body['workspacename']})
+# target_collect = None
+# for collect in wrksp['collections']:
+#     # print(collect['name'])
+#     # print(body['collectionname'])
+#     if collect['name'] == body['collectionname']:
+#         target_collect = collect
+# if target_collect is None:
+#     return 'No such image collection!'
+
 
 
 def send_rule():

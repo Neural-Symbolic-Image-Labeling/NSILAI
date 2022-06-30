@@ -3,7 +3,7 @@ from flask_cors import CORS
 from flask_pymongo import PyMongo
 import base64
 from views.pretrain import pretrain_label
-# from views.foil import foil
+from views.foil import FOIL
 from views.test import send_rule
 
 import os
@@ -84,63 +84,31 @@ def select_set():
 
 
 # Classification
-@app.route('/flaskadmin/foil', methods=['GET'])
+@app.route('/flaskadmin/foil', methods=['POST'])
 def train_rule():
-    # set_name = request.args.get('set')
-    # body = request.get_json()
-    ######
-    body = {
-        'workspacename': '123',
-        'collectionname': '123'
-    }
-    wrk = {
-        'name': '123',
-        'collections': [{
-            'name': '123',
-            'rules': []
-        },
-            {
-                'name': '456',
-                 'rules': [1, 2, 3]
-            }]
-
-    }
-    mongo.db.Workspace.insert_one(wrk)
-    wrksp = mongo.db.Workspace.find_one({'name': body['workspacename']})
+    body = request.get_json()
+    wrksp = mongo.db.Workspance.find_one({'_id': body['workspaceID']})
     target_collect = None
+
     for collect in wrksp['collections']:
-        # print(collect['name'])
-        # print(body['collectionname'])
-        if collect['name'] == body['collectionname']:
+        if collect['_id'] == body['collectionID']:
             target_collect = collect
     if target_collect is None:
         return 'No such image collection!'
-    ######
-    # wrksp = mongo.db.Workspance.find_one({'_id': body['workspaceID']})
-    # target_collect = None
-    # for collect in wrksp['collections']:
-    #     if collect['_id'] == body['collectionID']:
-    #         target_collect = collect
-    # if target_collect is None:
-    #     return 'No such image collection!'
 
-    # image_metas = target_collect['images']
-    # lst = []
-    # index = 1
-    # # Add condition for no label
-    # for img in image_metas:
-    #     img_init = mongo.db.image.find_one({'_id': img['imageId']})
-    #     img_dict = {'imageID': index, 'type': img['labels'][0], 'object': img_init['interpretation']['object'],
-    #                 'overlap': img_init['interpretation']['overlap']}
-    #     lst.append(img_dict)
-    #     index += 1
+    image_metas = target_collect['images']
+    lst = []
+    index = 1
+    # Add condition for no label
+    for img in image_metas:
+        img_init = mongo.db.image.find_one({'_id': img['imageId']})
+        if not len(img['labels']) == 0:
+            img_dict = {'imageID': index, 'type': img['labels'][0], 'object': img_init['interpretation']['object'],
+                        'overlap': img_init['interpretation']['overlap']}
+            lst.append(img_dict)
+            index += 1
 
-    # rule = foil(lst)
-    #####
-    rule = send_rule()
-    #####
-    # Need to return a label name or several label name
-    # Need to change to collection _id
+    rule = FOIL(lst)
 
     for key in rule:
         flag = 0
@@ -155,22 +123,17 @@ def train_rule():
     target_collect_lst = wrksp['collections']
     i = 0
     while i < len(target_collect_lst):
-        if target_collect_lst[i]['name'] == target_collect['name']:
+        if target_collect_lst[i]['_id'] == target_collect['_id']:
             target_collect_lst[i] = target_collect
-        # else:
-        #     print(target_collect)
-        #     print(target_collect_lst)
-        #     return 'No collection found'
+        else:
+            return 'No collection found'
         i += 1
 
-    print(target_collect_lst)
-    # target = mongo.db.image.find_one({'_id': image_id})
-    #####
-    filter = {'name': '123'}
-    #####
+    flt = {'_id': body['workspaceID']}
     new_wrksp = {'$set': {'collections': target_collect_lst}}
-    #Need to be changed to update_one
-    mongo.db.Workspace.update_many(filter, new_wrksp)
+
+    # Need to be changed to update_one
+    mongo.db.Workspace.update_one(flt, new_wrksp)
 
     return render_template('Success.html', target=wrksp)
 
