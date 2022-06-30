@@ -109,20 +109,29 @@ def train_rule():
     rule = foil(lst)
     # Need to return a label name or several label name
 
-    target_rule = target_collect['rules']
-    # for rules in target_coll['rules']:
+    # target_rule = target_collect['rules']
 
-    if target_rule is []:
-        rule = {
-            'label': '', # label need to be added
-            'value': rule,
-        }, {'_id': 'false'}
-        target_rule.append(rule)
-    else:
-        new_rule = {'$set': {'value': rule}}
-        target_rule.append(new_rule)
+    for res in rule:
+        flag = 0
+        for rules in target_collect['rules']:
+            if res['name'] == rules['label']:
+                rules['value'] == res['value']
+                flag = 1
+        if flag == 0:
+            target_collect['rules'].append({'label': res['name'],
+                                            'value': res['value']})
 
-    return render_template('Success.html', target=target_rule)
+    # if target_rule is []:
+    #     rule = {
+    #         'label': '', # label need to be added
+    #         'value': rule,
+    #     }, {'_id': 'false'}
+    #     target_rule.append(rule)
+    # else:
+    #     new_rule = {'$set': {'value': rule}}
+    #     target_rule.append(new_rule)
+
+    return render_template('Success.html', target=target_collect['rules'])
 
 
 @app.route('/flaskadmin')
