@@ -133,9 +133,7 @@ def train_rule():
     new_wrksp = { '$set': {'collections': target_collect}}
     mongo.db.image.update_one(wrksp, new_wrksp)
 
-
-
-    return render_template('Success.html', target=target_collect['rules'])
+    return render_template('Success.html', target=wrksp)
 
 
 @app.route('/flaskadmin')

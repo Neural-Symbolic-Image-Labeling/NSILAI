@@ -2,7 +2,7 @@
 <title>Success</title>
 <h1>Rules:</h1>
     <ul>
-    {% for rule in target%}
+    {% for rule in target.collections.rules%}
         <li>{{ rule.label }}</li>
         <li>{{ rule.value }}</li>
     {% endfor %}
