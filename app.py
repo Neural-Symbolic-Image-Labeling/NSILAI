@@ -4,7 +4,6 @@ from flask_pymongo import PyMongo
 import base64
 from views.pretrain import pretrain_label
 from views.foil import FOIL
-from views.test import send_rule
 
 import os
 
@@ -22,37 +21,23 @@ app.config.update(
 
 mongo = PyMongo(app)
 
-@app.route('/flaskadmin/pretrainedmodel', methods=['GET'])
-def input_image():
-    # Only for testing
-    # image = {'_id': '123', 'name': 'test',
-    #          'data': 'data:/image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAA' \
-    #         'LEwEAmpwYAAAB1klEQVQ4jY2TTUhUURTHf+fy/HrjhNEX2KRGiyIXg8xgSURuokX' \
-    #         'LxFW0qDTaSQupkHirthK0qF0WQQQR0UCbwCQyw8KCiDbShEYLJQdmpsk3895p4aS' \
-    #         'v92ass7pcfv/zP+fcc4U6kXKe2pTY3tjSUHjtnFgB0VqchC/SY8/293S23f+6VEj' \
-    #         '9KKwCoPDNIJdmr598GOZNJKNWTic7tqb27WwNuuwGvVWrAit84fsmMzE1P1+1TiK' \
-    #         'MVKvYUjdBvzPZXCwXzyhyWNBgVYkgrIow09VJMznpyebWE+Tdn9cEroBSc1JVPS+' \
-    #         '6moh5Xyjj65vEgBxafGzWetTh+rr1eE/c/TMYg8hlAOvI6JP4KmwLgJ4qD0TIbli' \
-    #         'TB+sunjkbeLekKsZ6Zc8V027aBRoBRHVoduDiSypmGFG7CrcBEyDHA0ZNfNphC0D' \
-    #         '6amYa6ANw3YbWD4Pn3oIc+EdL36V3od0A+MaMAXmA8x2Zyn+IQeQeBDfRcUw3B+2' \
-    #         'PxwZ/EdtTDpCPQLMh9TKx0k3pXipEVlknsf5KoNzGyOe1sz8nvYtTQT6yyvTjIax' \
-    #         'smHGB9pFx4n3jIEfDePQvCIrnn0J4B/gA5J4XcRfu4JZuRAw3C51OtOjM3l2bMb8' \
-    #         'Br5eXCsT/w/EAAAAASUVORK5CYII=',
-    #          'interpretation': []}
-    # mongo.db.image.insert_one(image)
 
-    return render_template("input_image.html")
+# @app.route('/flaskadmin/pretrainedmodel', methods=['GET'])
+# def input_image():
+#
+#     return render_template("input_image.html")
 
 # @app.route('/flaskadmin/pretrain/<id>', methods=['GET'])
 # def pretrain(id):
 # Post
-#return status
+# return status
 
-@app.route('/flaskadmin/pretrain', methods=['GET'])
-def pretrain():
-    image_id = request.args.get('_id')
+# @app.route('/flaskadmin/pretrain', methods=['GET'])
+@app.route('/flaskadmin/pretrain/<img_id>', methods=['POST'])
+def pretrain(img_id):
+    # image_id = request.args.get('_id')
     # base64_img_bytes = image_id.encode('utf-8')
-    target = mongo.db.image.find_one({'_id': image_id})
+    target = mongo.db.image.find_one({'_id': img_id})
     if target is None:
         return 'No image found!'
     base64_img_bytes = target['data']
@@ -72,15 +57,15 @@ def pretrain():
     # data = json.load(data)
     interpretation = {k: data[0][k] for k in ['object', 'overlap'] if k in data[0]}
     # print(interpretation)
-    new_int = { '$set': {'interpretation': interpretation}}
+    new_int = {'$set': {'interpretation': interpretation}}
     mongo.db.image.update_one(target, new_int)
 
     return render_template('showgallery.html', target=target)
 
 
-@app.route('/flaskadmin/selectset', methods=['GET'])
-def select_set():
-    return render_template('selectset.html')
+# @app.route('/flaskadmin/selectset', methods=['GET'])
+# def select_set():
+#     return render_template('selectset.html')
 
 
 # Classification
@@ -138,6 +123,6 @@ def train_rule():
     return render_template('Success.html', target=wrksp)
 
 
-@app.route('/flaskadmin')
-def mainpage():
-    return render_template("index.html")
+# @app.route('/flaskadmin')
+# def mainpage():
+#     return render_template("index.html")
