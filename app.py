@@ -42,6 +42,10 @@ def input_image():
 
     return render_template("input_image.html")
 
+# @app.route('/flaskadmin/pretrain/<id>', methods=['GET'])
+# def pretrain(id):
+# Post
+#return status
 
 @app.route('/flaskadmin/pretrain', methods=['GET'])
 def pretrain():
@@ -78,36 +82,45 @@ def select_set():
     return render_template('selectset.html')
 
 
-@app.route('/flaskadmin/foil', methods=['GET'])
+# Classification
+@app.route('/flaskadmin/foil', methods=['POST'])
 def train_rule():
-    set_name = request.args.get('set')
-    # May be modified by the schema
-    target_set = mongo.db.ImageSet.find_one({'name': set_name})
-    if target_set is None:
-        return 'No such image set!'
-    image_ids = target_set['images']
+    # set_name = request.args.get('set')
+    body = request.get_json()
+    wrksp = mongo.db.Workspance.find_one({'_id': body['workspaceID']})
+    target_collect = {}
+    for collect in wrksp['collections']:
+        if collect['_id'] == body['collectionID']:
+            target_collect = collect
+    if target_collect is {}:
+        return 'No such image collection!'
+
+    image_metas = target_collect['images']
     lst = []
-    index = 0
-    for img_id in image_ids:
-        img = mongo.db.image.find_one({'_id': img_id})
-        img_dict = {'imageID': index, 'type': set_name, 'object': img['interpretation']['object'],
-                    'overlap': img['interpretation']['overlap']}
+    index = 1
+    # Add condition for no label
+    for img in image_metas:
+        img_init = mongo.db.image.find_one({'_id': img['imageId']})
+        img_dict = {'imageID': index, 'type': img['labels'][0], 'object': img_init['interpretation']['object'],
+                    'overlap': img_init['interpretation']['overlap']}
         lst.append(img_dict)
         index += 1
-    rule = foil(lst)
 
-    # Where is the rule located in database? Collection?
-    target_rule = mongo.db.Workspance.Rule.find_one({'label': set_name})
-    if target_rule is None:
+    rule = foil(lst)
+    # Need to return a label name or several label name
+
+    target_rule = target_collect['rules']
+    # for rules in target_coll['rules']:
+
+    if target_rule is []:
         rule = {
-            'label': set_name,
+            'label': '', # label need to be added
             'value': rule,
         }, {'_id': 'false'}
-
-        mongo.db.Workspance.Rule.insert(rule)
+        target_rule.append(rule)
     else:
         new_rule = {'$set': {'value': rule}}
-        mongo.db.image.update_one(target_rule, new_rule)
+        target_rule.append(new_rule)
 
     return render_template('Success.html', target=target_rule)
 
