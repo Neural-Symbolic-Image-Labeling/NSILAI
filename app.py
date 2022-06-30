@@ -118,8 +118,7 @@ def train_rule():
                 rules['value'] == value
                 flag = 1
         if flag == 0:
-            target_collect['rules'].append({'label': key,
-                                            'value': value})
+            target_collect['rules'].append({'label': key, 'value': value})
 
     # if target_rule is []:
     #     rule = {
@@ -130,6 +129,11 @@ def train_rule():
     # else:
     #     new_rule = {'$set': {'value': rule}}
     #     target_rule.append(new_rule)
+
+    new_wrksp = { '$set': {'collections': target_collect}}
+    mongo.db.image.update_one(wrksp, new_wrksp)
+
+
 
     return render_template('Success.html', target=target_collect['rules'])
 
