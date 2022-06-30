@@ -111,15 +111,15 @@ def train_rule():
 
     # target_rule = target_collect['rules']
 
-    for res in rule:
+    for key, value in rule:
         flag = 0
         for rules in target_collect['rules']:
-            if res['name'] == rules['label']:
-                rules['value'] == res['value']
+            if key == rules['label']:
+                rules['value'] == value
                 flag = 1
         if flag == 0:
-            target_collect['rules'].append({'label': res['name'],
-                                            'value': res['value']})
+            target_collect['rules'].append({'label': key,
+                                            'value': value})
 
     # if target_rule is []:
     #     rule = {
