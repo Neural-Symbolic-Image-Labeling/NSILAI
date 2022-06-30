@@ -3,7 +3,8 @@ from flask_cors import CORS
 from flask_pymongo import PyMongo
 import base64
 from views.pretrain import pretrain_label
-from views.foil import foil
+# from views.foil import foil
+from views.test import send_rule
 
 import os
 
@@ -83,55 +84,93 @@ def select_set():
 
 
 # Classification
-@app.route('/flaskadmin/foil', methods=['POST'])
+@app.route('/flaskadmin/foil', methods=['GET'])
 def train_rule():
     # set_name = request.args.get('set')
-    body = request.get_json()
-    wrksp = mongo.db.Workspance.find_one({'_id': body['workspaceID']})
-    target_collect = {}
+    # body = request.get_json()
+    ######
+    body = {
+        'workspacename': '123',
+        'collectionname': '123'
+    }
+    wrk = {
+        'name': '123',
+        'collections': [{
+            'name': '123',
+            'rules': []
+        },
+            {
+                'name': '456',
+                 'rules': [1, 2, 3]
+            }]
+
+    }
+    mongo.db.Workspace.insert_one(wrk)
+    wrksp = mongo.db.Workspace.find_one({'name': body['workspacename']})
+    target_collect = None
     for collect in wrksp['collections']:
-        if collect['_id'] == body['collectionID']:
+        # print(collect['name'])
+        # print(body['collectionname'])
+        if collect['name'] == body['collectionname']:
             target_collect = collect
-    if target_collect is {}:
+    if target_collect is None:
         return 'No such image collection!'
+    ######
+    # wrksp = mongo.db.Workspance.find_one({'_id': body['workspaceID']})
+    # target_collect = None
+    # for collect in wrksp['collections']:
+    #     if collect['_id'] == body['collectionID']:
+    #         target_collect = collect
+    # if target_collect is None:
+    #     return 'No such image collection!'
 
-    image_metas = target_collect['images']
-    lst = []
-    index = 1
-    # Add condition for no label
-    for img in image_metas:
-        img_init = mongo.db.image.find_one({'_id': img['imageId']})
-        img_dict = {'imageID': index, 'type': img['labels'][0], 'object': img_init['interpretation']['object'],
-                    'overlap': img_init['interpretation']['overlap']}
-        lst.append(img_dict)
-        index += 1
+    # image_metas = target_collect['images']
+    # lst = []
+    # index = 1
+    # # Add condition for no label
+    # for img in image_metas:
+    #     img_init = mongo.db.image.find_one({'_id': img['imageId']})
+    #     img_dict = {'imageID': index, 'type': img['labels'][0], 'object': img_init['interpretation']['object'],
+    #                 'overlap': img_init['interpretation']['overlap']}
+    #     lst.append(img_dict)
+    #     index += 1
 
-    rule = foil(lst)
+    # rule = foil(lst)
+    #####
+    rule = send_rule()
+    #####
     # Need to return a label name or several label name
+    # Need to change to collection _id
 
-    # target_rule = target_collect['rules']
-
-    for key, value in rule:
+    for key in rule:
         flag = 0
         for rules in target_collect['rules']:
             if key == rules['label']:
-                rules['value'] == value
+                rules['value'] = rule[key]
                 flag = 1
         if flag == 0:
-            target_collect['rules'].append({'label': key, 'value': value})
+            target_collect['rules'].append({'label': key, 'value': rule[key]})
+            # print(target_collect['rules'])
 
-    # if target_rule is []:
-    #     rule = {
-    #         'label': '', # label need to be added
-    #         'value': rule,
-    #     }, {'_id': 'false'}
-    #     target_rule.append(rule)
-    # else:
-    #     new_rule = {'$set': {'value': rule}}
-    #     target_rule.append(new_rule)
+    target_collect_lst = wrksp['collections']
+    i = 0
+    while i < len(target_collect_lst):
+        if target_collect_lst[i]['name'] == target_collect['name']:
+            target_collect_lst[i] = target_collect
+        # else:
+        #     print(target_collect)
+        #     print(target_collect_lst)
+        #     return 'No collection found'
+        i += 1
 
-    new_wrksp = { '$set': {'collections': target_collect}}
-    mongo.db.image.update_one(wrksp, new_wrksp)
+    print(target_collect_lst)
+    # target = mongo.db.image.find_one({'_id': image_id})
+    #####
+    filter = {'name': '123'}
+    #####
+    new_wrksp = {'$set': {'collections': target_collect_lst}}
+    #Need to be changed to update_one
+    mongo.db.Workspace.update_many(filter, new_wrksp)
 
     return render_template('Success.html', target=wrksp)
 

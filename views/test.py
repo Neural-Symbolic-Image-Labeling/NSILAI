@@ -40,3 +40,18 @@ import base64
 # decoded_image_data = base64.b64decode(base64_img_bytes)
 # print(decoded_image_data)
 # print("".join(["{:08b}".format(x) for x in decoded_image_data]))
+
+# if target_rule is []:
+#     rule = {
+#         'label': '', # label need to be added
+#         'value': rule,
+#     }, {'_id': 'false'}
+#     target_rule.append(rule)
+# else:
+#     new_rule = {'$set': {'value': rule}}
+#     target_rule.append(new_rule)
+
+
+
+def send_rule():
+    return {'rule1': [[1, 2, 3], [1, 2, 3]], 'rule2': [[1, 2, 3], [1, 2, 3]]}
