@@ -73,15 +73,28 @@ def pretrain(img_id):
 def train_rule():
     body = request.get_json()
     wrksp = mongo.db.Workspance.find_one({'_id': body['workspaceID']})
+    if wrksp is None:
+        return {'code': 2,
+                'msg': 'No such workspace!',
+                'errorLog': None
+                }
     target_collect = None
 
     for collect in wrksp['collections']:
         if collect['_id'] == body['collectionID']:
             target_collect = collect
     if target_collect is None:
-        return 'No such image collection!'
+        return {'code': 2,
+                'msg': 'No such image collection!',
+                'errorLog': None
+                }
 
     image_metas = target_collect['images']
+    if image_metas is []:
+        return {'code': 2,
+                'msg': 'No images in the collection!',
+                'errorLog': None
+                }
     lst = []
     index = 1
     # Add condition for no label
@@ -92,36 +105,55 @@ def train_rule():
                         'overlap': img_init['interpretation']['overlap']}
             lst.append(img_dict)
             index += 1
-
-    rule = FOIL(lst)
+    try:
+        rule = FOIL(lst)
+    except Exception as ex:
+        return {'code': 4,
+                'msg': 'ERROR in FOIL',
+                'errorLog': ex
+                }
 
     for key in rule:
         flag = 0
-        for rules in target_collect['rules']:
-            if key == rules['label']:
-                rules['value'] = rule[key]
-                flag = 1
-        if flag == 0:
+        if not target_collect['rules']:
             target_collect['rules'].append({'label': key, 'value': rule[key]})
+        else:
+            for rules in target_collect['rules']:
+                if key == rules['label']:
+                    rules['value'] = rule[key]
+                    flag = 1
+            if flag == 0:
+                target_collect['rules'].append({'label': key, 'value': rule[key]})
             # print(target_collect['rules'])
 
     target_collect_lst = wrksp['collections']
     i = 0
+    flag = 0
     while i < len(target_collect_lst):
         if target_collect_lst[i]['_id'] == target_collect['_id']:
             target_collect_lst[i] = target_collect
-        else:
-            return 'No collection found'
+            flag = 1
         i += 1
+
+    if flag == 0:
+        return {'code': 2,
+                'msg': 'No such collection!',
+                'errorLog': None
+                }
 
     flt = {'_id': body['workspaceID']}
     new_wrksp = {'$set': {'collections': target_collect_lst}}
 
     # Need to be changed to update_one
-    mongo.db.Workspace.update_one(flt, new_wrksp)
+    try:
+        mongo.db.Workspace.update_one(flt, new_wrksp)
+    except Exception as err:
+        return {'code': 2,
+                'msg': 'Fail to Update!',
+                'errorLog': err
+                }
 
-    return render_template('Success.html', target=wrksp)
-
+    return {'code': 0, 'msg': "success", 'errorLog': None}
 
 # @app.route('/flaskadmin')
 # def mainpage():
