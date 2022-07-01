@@ -39,7 +39,10 @@ def pretrain(img_id):
     # base64_img_bytes = image_id.encode('utf-8')
     target = mongo.db.image.find_one({'_id': img_id})
     if target is None:
-        return 'No image found!'
+        return {'code': 2,
+                'msg': 'No such image, id is invalid!',
+                'errorLog': None
+                }
     base64_img_bytes = target['data']
     base64_img = base64_img_bytes[base64_img_bytes.rfind(','):]
 
@@ -53,14 +56,27 @@ def pretrain(img_id):
     # data = json.load(json_res)
 
     # For testing
-    data = pretrain_label(decoded_image_data)
+    try:
+        data = pretrain_label(decoded_image_data)
+    except Exception as err:
+        return {'code': 3,
+                'msg': 'ERROR in pre-train',
+                'errorLog': err
+                }
+
     # data = json.load(data)
     interpretation = {k: data[0][k] for k in ['object', 'overlap'] if k in data[0]}
     # print(interpretation)
     new_int = {'$set': {'interpretation': interpretation}}
-    mongo.db.image.update_one(target, new_int)
+    try:
+        mongo.db.image.update_one(target, new_int)
+    except Exception as err:
+        return {'code': 2,
+                'msg': 'Fail to Update!',
+                'errorLog': err
+                }
 
-    return render_template('showgallery.html', target=target)
+    return {'code': 0, 'msg': "success", 'errorLog': None}
 
 
 # @app.route('/flaskadmin/selectset', methods=['GET'])
