@@ -1,381 +1,160 @@
+from PIL import Image
+import matplotlib.pyplot as plt
+from transformers import DetrFeatureExtractor, DetrForObjectDetection
+import torch
+import torchvision.transforms as transforms
 import json
+torch.set_grad_enabled(False)
+# classes
+feature_extractor = DetrFeatureExtractor.from_pretrained('facebook/detr-resnet-50')
+transforms = transforms.Compose([
+    transforms.Resize(feature_extractor.size),
+    transforms.ToTensor(),
+    transforms.Normalize(feature_extractor.image_mean, feature_extractor.image_std)
+])
 
 
 def pretrain_label(x):
-    y =[
-        {
-            "imageId": 1,
-            "type": "residential",
-            "object": {
-                "0": {
-                    "coordinate": [
-                        257.9944763183594,
-                        287.7940979003906,
-                        290.0779724121094,
-                        354.9258728027344
-                    ],
-                    "name": "bicycle",
-                    "prob": 0.9347964525222778
-                },
-                "1": {
-                    "coordinate": [
-                        530.4903564453125,
-                        244.48977661132812,
-                        600.1332397460938,
-                        288.0487976074219
-                    ],
-                    "name": "car",
-                    "prob": 0.9923160076141357
-                },
-                "2": {
-                    "coordinate": [
-                        626.8028564453125,
-                        227.93722534179688,
-                        654.0745239257812,
-                        245.88104248046875
-                    ],
-                    "name": "car",
-                    "prob": 0.977764904499054
-                },
-                "3": {
-                    "coordinate": [
-                        726.5365600585938,
-                        237.34446716308594,
-                        780.969970703125,
-                        280.0218200683594
-                    ],
-                    "name": "car",
-                    "prob": 0.9888155460357666
-                },
-                "4": {
-                    "coordinate": [
-                        477.26202392578125,
-                        261.5259094238281,
-                        534.943115234375,
-                        320.7468566894531
-                    ],
-                    "name": "car",
-                    "prob": 0.9665436148643494
-                },
-                "5": {
-                    "coordinate": [
-                        687.7611694335938,
-                        207.08084106445312,
-                        720.537353515625,
-                        243.78323364257812
-                    ],
-                    "name": "truck",
-                    "prob": 0.8917095065116882
-                },
-                "6": {
-                    "coordinate": [
-                        537.5811767578125,
-                        225.8563232421875,
-                        603.4354248046875,
-                        282.1986083984375
-                    ],
-                    "name": "truck",
-                    "prob": 0.935357391834259
-                },
-                "7": {
-                    "coordinate": [
-                        0.06627202033996582,
-                        265.28729248046875,
-                        140.37527465820312,
-                        346.16748046875
-                    ],
-                    "name": "car",
-                    "prob": 0.9574761986732483
-                },
-                "8": {
-                    "coordinate": [
-                        525.0438232421875,
-                        227.45933532714844,
-                        555.3892211914062,
-                        258.2247009277344
-                    ],
-                    "name": "truck",
-                    "prob": 0.8918917179107666
-                },
-                "9": {
-                    "coordinate": [
-                        669.6280517578125,
-                        227.241943359375,
-                        699.2305908203125,
-                        252.501953125
-                    ],
-                    "name": "car",
-                    "prob": 0.7765915989875793
-                },
-                "10": {
-                    "coordinate": [
-                        434.11810302734375,
-                        215.77188110351562,
-                        510.5003356933594,
-                        263.4847106933594
-                    ],
-                    "name": "truck",
-                    "prob": 0.9329550862312317
-                },
-                "11": {
-                    "coordinate": [
-                        355.7643737792969,
-                        252.37738037109375,
-                        513.6128540039062,
-                        364.70709228515625
-                    ],
-                    "name": "car",
-                    "prob": 0.9973635077476501
-                },
-                "12": {
-                    "coordinate": [
-                        233.1287841796875,
-                        239.90130615234375,
-                        283.01251220703125,
-                        365.5648193359375
-                    ],
-                    "name": "person",
-                    "prob": 0.998606264591217
-                },
-                "13": {
-                    "coordinate": [
-                        0.16564375162124634,
-                        279.3693542480469,
-                        140.44955444335938,
-                        509.1003112792969
-                    ],
-                    "name": "car",
-                    "prob": 0.9914522171020508
-                },
-                "14": {
-                    "coordinate": [
-                        524.1541748046875,
-                        229.011474609375,
-                        553.2066040039062,
-                        257.3114013671875
-                    ],
-                    "name": "car",
-                    "prob": 0.8883239030838013
-                },
-                "15": {
-                    "coordinate": [
-                        535.8037719726562,
-                        225.3301544189453,
-                        602.1201171875,
-                        281.66168212890625
-                    ],
-                    "name": "car",
-                    "prob": 0.7459155321121216
-                },
-                "16": {
-                    "coordinate": [
-                        749.0791015625,
-                        241.26931762695312,
-                        852.0155639648438,
-                        317.3918762207031
-                    ],
-                    "name": "car",
-                    "prob": 0.9920839071273804
-                },
-                "17": {
-                    "coordinate": [
-                        722.8372192382812,
-                        235.8607635498047,
-                        771.4263916015625,
-                        276.3967590332031
-                    ],
-                    "name": "car",
-                    "prob": 0.8885577321052551
-                },
-                "18": {
-                    "coordinate": [
-                        262.0736999511719,
-                        249.03326416015625,
-                        291.6687316894531,
-                        304.23870849609375
-                    ],
-                    "name": "person",
-                    "prob": 0.8681740760803223
-                },
-                "19": {
-                    "coordinate": [
-                        714.8162841796875,
-                        200.403564453125,
-                        757.2030029296875,
-                        239.18038940429688
-                    ],
-                    "name": "truck",
-                    "prob": 0.8838497996330261
-                },
-                "20": {
-                    "coordinate": [
-                        818.9661254882812,
-                        241.60928344726562,
-                        1038.0396728515625,
-                        407.1938781738281
-                    ],
-                    "name": "car",
-                    "prob": 0.998096764087677
-                },
-                "21": {
-                    "coordinate": [
-                        722.7051391601562,
-                        213.1856689453125,
-                        752.4074096679688,
-                        239.19329833984375
-                    ],
-                    "name": "truck",
-                    "prob": 0.8416678309440613
-                }
-            },
-            "overlap": {
-                "0": {
-                    "idA": 0,
-                    "idB": 12,
-                    "area": 1679.5051537770778
-                },
-                "1": {
-                    "idA": 0,
-                    "idB": 18,
-                    "area": 460.51935563609004
-                },
-                "2": {
-                    "idA": 1,
-                    "idB": 4,
-                    "area": 118.100023470819
-                },
-                "3": {
-                    "idA": 1,
-                    "idB": 6,
-                    "area": 2358.765221161768
-                },
-                "4": {
-                    "idA": 1,
-                    "idB": 8,
-                    "area": 341.9840228520334
-                },
-                "5": {
-                    "idA": 1,
-                    "idB": 14,
-                    "area": 291.2592020574957
-                },
-                "6": {
-                    "idA": 1,
-                    "idB": 15,
-                    "area": 2391.2488980703056
-                },
-                "7": {
-                    "idA": 3,
-                    "idB": 16,
-                    "area": 1235.8509842306376
-                },
-                "8": {
-                    "idA": 3,
-                    "idB": 17,
-                    "area": 1753.0508034164086
-                },
-                "9": {
-                    "idA": 3,
-                    "idB": 19,
-                    "area": 56.301204525865614
-                },
-                "10": {
-                    "idA": 3,
-                    "idB": 21,
-                    "area": 47.830833327025175
-                },
-                "11": {
-                    "idA": 4,
-                    "idB": 10,
-                    "area": 65.10724728740752
-                },
-                "12": {
-                    "idA": 4,
-                    "idB": 11,
-                    "area": 2152.7305911183357
-                },
-                "13": {
-                    "idA": 5,
-                    "idB": 9,
-                    "area": 189.71902853809297
-                },
-                "14": {
-                    "idA": 5,
-                    "idB": 19,
-                    "area": 183.64374170452356
-                },
-                "15": {
-                    "idA": 6,
-                    "idB": 8,
-                    "area": 547.870997630991
-                },
-                "16": {
-                    "idA": 6,
-                    "idB": 14,
-                    "area": 442.198446623981
-                },
-                "17": {
-                    "idA": 6,
-                    "idB": 15,
-                    "area": 3601.6187328472733
-                },
-                "18": {
-                    "idA": 7,
-                    "idB": 13,
-                    "area": 9365.740622656054
-                },
-                "19": {
-                    "idA": 8,
-                    "idB": 14,
-                    "area": 797.0046328529716
-                },
-                "20": {
-                    "idA": 8,
-                    "idB": 15,
-                    "area": 602.553505666554
-                },
-                "21": {
-                    "idA": 10,
-                    "idB": 11,
-                    "area": 848.4026889735833
-                },
-                "22": {
-                    "idA": 12,
-                    "idB": 18,
-                    "area": 1155.9364344514906
-                },
-                "23": {
-                    "idA": 14,
-                    "idB": 15,
-                    "area": 492.49887186288834
-                },
-                "24": {
-                    "idA": 16,
-                    "idB": 17,
-                    "area": 785.0031214356422
-                },
-                "25": {
-                    "idA": 16,
-                    "idB": 20,
-                    "area": 2504.5721374601126
-                },
-                "26": {
-                    "idA": 17,
-                    "idB": 19,
-                    "area": 114.08154405187815
-                },
-                "27": {
-                    "idA": 17,
-                    "idB": 21,
-                    "area": 98.54368835501373
-                },
-                "28": {
-                    "idA": 19,
-                    "idB": 21,
-                    "area": 772.1022188477218
-                }
-            }
-        }]
+    CLASSES = [
+        'N/A', 'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus',
+        'train', 'truck', 'boat', 'traffic light', 'fire hydrant', 'N/A',
+        'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse',
+        'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe', 'N/A', 'backpack',
+        'umbrella', 'N/A', 'N/A', 'handbag', 'tie', 'suitcase', 'frisbee', 'skis',
+        'snowboard', 'sports ball', 'kite', 'baseball bat', 'baseball glove',
+        'skateboard', 'surfboard', 'tennis racket', 'bottle', 'N/A', 'wine glass',
+        'cup', 'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple', 'sandwich',
+        'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 'donut', 'cake',
+        'chair', 'couch', 'potted plant', 'bed', 'N/A', 'dining table', 'N/A',
+        'N/A', 'toilet', 'N/A', 'tv', 'laptop', 'mouse', 'remote', 'keyboard',
+        'cell phone', 'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'N/A',
+        'book', 'clock', 'vase', 'scissors', 'teddy bear', 'hair drier',
+        'toothbrush'
+    ]
+
+    # # colors for visualization
+    # COLORS = [[0.000, 0.447, 0.741], [0.850, 0.325, 0.098], [0.929, 0.694, 0.125],
+    #           [0.494, 0.184, 0.556], [0.466, 0.674, 0.188], [0.301, 0.745, 0.933]]
+
+
+    # standard PyTorch mean-std input image normalization
+
+
+    # for output bounding box post-processing
+    def box_cxcywh_to_xyxy(x):
+        x_c, y_c, w, h = x.unbind(1)
+        b = [(x_c - 0.5 * w), (y_c - 0.5 * h),
+             (x_c + 0.5 * w), (y_c + 0.5 * h)]
+        return torch.stack(b, dim=1)
+
+    def rescale_bboxes(out_bbox, size):
+        img_w, img_h = size
+        b = box_cxcywh_to_xyxy(out_bbox)
+        b = b * torch.tensor([img_w, img_h, img_w, img_h], dtype=torch.float32)
+        return b
+
+    def detect(im, model, transform):
+        # mean-std normalize the input image (batch-size: 1)
+        #print(im)
+        img = transform(im).unsqueeze(0)
+        # assert img.shape[-2] <= 1600 and img.shape[-1] <= 1600, 'model only supports images up to 1600 pixels on each side'
+        # propagate through the model
+        outputs = model(img)
+        # keep only predictions with 0.7+ confidence
+        probas = outputs['logits'].softmax(-1)[0, :, :-1]
+        keep = probas.max(-1).values > 0.7
+        # convert boxes from [0; 1] to image scales
+        bboxes_scaled = rescale_bboxes(outputs['pred_boxes'][0, keep], im.size)
+        return probas[keep], bboxes_scaled
+
+    with open('./pics.png', mode='w+b') as fi:
+        fi.write(x)
+    # url = 'http://images.cocodataset.org/val2017/000000125062.jpg'
+    # im = Image.open(requests.get(url, stream=True).raw)
+    im = Image.open('pics.png').convert('RGB')
+    # im = Image.open('125062.jpg')
+
+    def overlap(x1, y1, x2, y2, x3, y3, x4, y4):
+        s1 = [x1, y1, x2, y2]
+        s2 = [x3, y3, x4, y4]
+        if s1[0] > s1[2]:
+            s1[0], s1[2] = s1[2], s1[0]
+        if s1[1] > s1[3]:
+            s1[1], s1[3] = s1[3], s1[1]
+        if s2[0] > s2[2]:
+            s2[0], s2[2] = s2[2], s2[0]
+        if s2[1] > s2[3]:
+            s2[1], s2[3] = s2[3], s2[1]
+        temp_x1 = max(s1[0], s2[0])
+        temp_x2 = min(s1[2], s2[2])
+        temp_y1 = max(s1[1], s2[1])
+        temp_y2 = min(s1[3], s2[3])
+        if temp_x2 - temp_x1 < 0 or temp_y2 - temp_y1 < 0:
+            res = 0
+        else:
+            res = (temp_y2 - temp_y1) * (temp_x2 - temp_x1)
+        return (res)
+
+    def plot_results(pil_img, prob, boxes, data):
+        plt.figure(figsize=(16, 10))
+        plt.imshow(pil_img)
+        ax = plt.gca()
+        sum = 0
+        for p, (xmin, ymin, xmax, ymax) in zip(prob, boxes.tolist()):
+            ax.add_patch(plt.Rectangle((xmin, ymin), xmax - xmin, ymax - ymin,
+                                       fill=False,  linewidth=3))
+
+            record[sum].append(xmin)
+            record[sum].append(ymin)
+            record[sum].append(xmax)
+            record[sum].append(ymax)
+            cl = p.argmax()
+            text = f'{CLASSES[cl]}: {p[cl]:0.2f}'
+            ax.text(xmin, ymin, text, fontsize=15,
+                    bbox=dict(facecolor='yellow', alpha=0.5))
+            print(sum, record[sum], text)
+            data['object'][sum] = {}
+            data['object'][sum]['coordinate'] = record[sum]
+            data['object'][sum]['name'] = CLASSES[cl]
+            data['object'][sum]['prob'] = float(p[cl])
+
+            sum = sum + 1
+        plt.axis('off')
+        plt.show()
+        return (record, sum, data)
+
+    record = []
+    for i in range(50):
+        record.append([])
+    model = DetrForObjectDetection.from_pretrained('facebook/detr-resnet-50')
+    scores, boxes = detect(im, model, transforms)
+    data = {
+        "imageId": 1,
+        "object": {},
+        "overlap": {},
+    }
+
+    record, sum, data = plot_results(im, scores, boxes, data)
+    total = 0
+    for i in range(sum):
+        for j in range(i + 1, sum):
+            size = overlap(record[i][0], record[i][1], record[i][2], record[i][3],
+                           record[j][0], record[j][1], record[j][2], record[j][3])
+            if (size > 0):
+                print(i, j, size)
+                data['overlap'][total] = {}
+                data['overlap'][total]['idA'] = i
+                data['overlap'][total]['idB'] = j
+                data['overlap'][total]['area'] = size
+                total = total + 1
+    y=[]
+    y.append(data)
+    print(y)
     # y = json.dumps(y)
     # print(y)
     return y
+
+# if __name__ == '__main__':
+#     x = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x10\x00\x00\x00\x10\x08\x06\x00\x00\x00\x1f\xf3\xffa\x00\x00\x00\tpHYs\x00\x00\x0b\x13\x00\x00\x0b\x13\x01\x00\x9a\x9c\x18\x00\x00\x01\xd6IDAT8\x8d\x8d\x93MHTQ\x14\xc7\x7f\xe7\xf2\xfcz\xe3\x84\xd1\x17\xd8\xa4F\x8b"\x17\x83\xcc`IDn\xa2E\xcb\xc4U\xb4\xa84\xdaI\x0b\xa9\x90x\xab\xb6\x12\xb4\xa8]\x16A\x04\x11\xd1@\x9b\xc0$2\xc3\xc2\x82\x886\xd2\x84F\x0b%\x07f\xa6\xc97\xf3\xdei\xe1\xa4\xaf\xf7f\xac\xb3\xba\\~\xff\xf3?\xe7\xdcs\x85:\x91r\x9e\xda\x94\xd8\xde\xd8\xd2Px\xed\x9cX\x01\xd1Z\x9c\x84/\xd2c\xcf\xf6\xf7t\xb6\xdd\xff\xbaTH\xfd(\xac\x02\xa0\xf0\xcd \x97f\xaf\x9f|\x18\xe6M$\xa3VN\';\xb6\xa6\xf6\xedl\r\xba\xec\x06\xbdU\xab\x02+|\xe1\xfb&315?_\xb5N"\x8cT\xab\xd8R7A\xbf3\xd9\\,\x17\xcf(rX\xd0`U\x89 \xac\x8a0\xd3\xd5I39\xe9\xc9\xe6\xd6\x13\xe4\xdd\x9f\xd7\x04\xae\x80RsRU=/\xba\x9a\x88y_(\xe3\xeb\x9b\xc4\x80\x1cZ|l\xd6z\xd4\xe1\xfa\xba\xf5xO\xdc\xfd3\x18\x83\xc8e\x00\xeb\xc8\xe8\x93\xf8*l\x0b\x80\x9e*\x0fD\xc8nX\x93\x07\xeb.\x9e9\x1bx\xb7\xa4*\xc6ze\xcf\x15\xd3n\xda\x05\x1a\x01Duhv\xe0\xe2K*f\x18Q\xbb\n\xb7\x01\x13 \xc7\x03FM|\xdaa\x0b@\xfajf\x1a\xe8\x03p\xdd\x86\xd6\x0f\x83\xe7\xde\x82\x1c\xf8GK\xdf\xa5w\xa1\xdd\x00\xf8\xc6\x8c\x01y\x80\xf3\x1d\x99\xca\x7f\x88A\xe4\x1e\x047\xd1qL7\x07\xed\x8f\xc7\x06\x7f\x11\xdbS\x0e\x90\x8f@\xb3!\xf52\xb1\xd2M\xe9^*DVY\'\xb1\xfeJ\xa0\xdc\xc6\xc8\xe7\xb5\xb3?\'\xbd\x8bSA>\xb2\xca\xf4\xe3!\xacl\x98q\x81\xf6\x91q\xe2}\xe3 G\xc3x\xf4/\x08\x8a\xe7\x9fBx\x07\xf8\x00\xe4\x9e\x17q\x17\xee\xe0\x96nD\x0c7\x0b\x9dN\xb4\xe8\xcc\xde]\x9b1\xbf\x01\xaf\x97\x97\n\xc4\xff\xc3\xf1\x00\x00\x00\x00IEND\xaeB`\x82'
+#     pretrain_label(x)
+
