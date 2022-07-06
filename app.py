@@ -57,7 +57,7 @@ def pretrain(img_id):
 
     # For testing
     try:
-        data = pretrain_label(decoded_image_data)
+        data = pretrain_label(decoded_image_data, img_id)
     except Exception as err:
         return {'code': 3,
                 'msg': 'ERROR in pre-train',
