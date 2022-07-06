@@ -4,6 +4,8 @@ from flask_pymongo import PyMongo
 import base64
 from views.pretrain import pretrain_label
 from views.foil import FOIL
+from itertools import izip
+
 
 import os
 
@@ -117,6 +119,7 @@ def train_rule():
             index += 1
     try:
         rule = FOIL(lst)[0]
+        natural_rule = FOIL(lst)[1]
     except Exception as ex:
         return {'msg': 'ERROR in FOIL',
                 'errorLog': ex
@@ -128,17 +131,36 @@ def train_rule():
             if key == rules['label']:
                 # rules['value'] = rule[key]
                 rules['value'].clear()
-                for val in rule[key]:
-                    for clause in val:
-                        new_cl = {'value': clause}
+                # for val in rule[key]:
+                #     for clause in val:
+                #         new_cl = {'value': clause}
+                #         rules['value'].append(new_cl)
+                i = 0
+                j = 0
+                while i < len(rule[key]):
+                    while j < len(rule[key][i]):
+                        new_cl = {'value': rule[key][i][j],
+                                  'naturalValue': natural_rule[key][i][j]}
                         rules['value'].append(new_cl)
+                        j += 1
+                    i += 1
                 flag = 1
         if flag == 0:
             new_rule = {'label': key, 'value': []}
-            for val in rule[key]:
-                for clause in val:
-                    new_cl = {'value': clause}
+            # for val in rule[key]:
+            #     for clause in val:
+            #         new_cl = {'value': clause}
+            #         new_rule['value'].append(new_cl)
+            i = 0
+            j = 0
+            while i < len(rule[key]):
+                while j < len(rule[key][i]):
+                    new_cl = {'value': rule[key][i][j],
+                              'naturalValue': natural_rule[key][i][j]}
                     new_rule['value'].append(new_cl)
+                    j += 1
+                i += 1
+
             target_collect['rules'].append(new_rule)
 
     target_collect_lst = wrksp['collections']
