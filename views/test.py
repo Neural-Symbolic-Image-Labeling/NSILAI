@@ -100,6 +100,24 @@ import base64
 #          'interpretation': []}
 # mongo.db.image.insert_one(image)
 
+########################### Used Code in FOIL flask
+# if not target_collect['rules']:
+#     # target_collect['rules'].append({'label': key, 'value': rule[key]})
+#     # Modification for new rule schema
+#     # target_collect['rules']['label'] = key
+#     # for val in rule[key]:
+#     #     for clause in val:
+#     #         new_cl = {'value': clause}
+#     #         target_collect['rules']['value'].append(new_cl)
+#     new_rule = {'label': key, 'value': []}
+#     for val in rule[key]:
+#         for clause in val:
+#             new_cl = {'value': clause}
+#             new_rule['value'].append(new_cl)
+#     target_collect['rules'].append(new_rule)
+#
+# else:
+
 #
 #
 # def send_rule():

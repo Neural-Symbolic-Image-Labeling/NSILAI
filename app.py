@@ -33,16 +33,15 @@ mongo = PyMongo(app)
 # return status
 
 # @app.route('/flaskadmin/pretrain', methods=['GET'])
-@app.route('/flaskadmin/pretrain/<img_id>', methods=['POST'])
+@app.route('/api/img/pre/<img_id>', methods=['POST'])
 def pretrain(img_id):
     # image_id = request.args.get('_id')
     # base64_img_bytes = image_id.encode('utf-8')
     target = mongo.db.image.find_one({'_id': img_id})
     if target is None:
-        return {'code': 2,
-                'msg': 'No such image, id is invalid!',
+        return {'msg': 'No such image, id is invalid!',
                 'errorLog': None
-                }
+                }, 404
     base64_img_bytes = target['data']
     base64_img = base64_img_bytes[base64_img_bytes.rfind(','):]
 
@@ -59,10 +58,9 @@ def pretrain(img_id):
     try:
         data = pretrain_label(decoded_image_data, img_id)
     except Exception as err:
-        return {'code': 3,
-                'msg': 'ERROR in pre-train',
+        return {'msg': 'ERROR in pre-train',
                 'errorLog': err
-                }
+                }, 500
 
     # data = json.load(data)
     interpretation = {k: data[0][k] for k in ['object', 'overlap'] if k in data[0]}
@@ -71,12 +69,11 @@ def pretrain(img_id):
     try:
         mongo.db.image.update_one(target, new_int)
     except Exception as err:
-        return {'code': 2,
-                'msg': 'Fail to Update!',
+        return {'msg': 'Fail to Update!',
                 'errorLog': err
-                }
+                }, 400
 
-    return {'code': 0, 'msg': "success", 'errorLog': None}
+    return {'code': 0, 'msg': "success", 'errorLog': None}, 200
 
 
 # @app.route('/flaskadmin/selectset', methods=['GET'])
@@ -85,32 +82,29 @@ def pretrain(img_id):
 
 
 # Classification
-@app.route('/flaskadmin/foil', methods=['POST'])
+@app.route('/api/autolabel', methods=['POST'])
 def train_rule():
     body = request.get_json()
     wrksp = mongo.db.Workspance.find_one({'_id': body['workspaceID']})
     if wrksp is None:
-        return {'code': 2,
-                'msg': 'No such workspace!',
+        return {'msg': 'No such workspace!',
                 'errorLog': None
-                }
+                }, 404
     target_collect = None
 
     for collect in wrksp['collections']:
         if collect['_id'] == body['collectionID']:
             target_collect = collect
     if target_collect is None:
-        return {'code': 2,
-                'msg': 'No such image collection!',
+        return {'msg': 'No such image collection!',
                 'errorLog': None
-                }
+                }, 404
 
     image_metas = target_collect['images']
     if image_metas is []:
-        return {'code': 2,
-                'msg': 'No images in the collection!',
+        return {'msg': 'No images in the collection!',
                 'errorLog': None
-                }
+                }, 404
     lst = []
     index = 1
     # Add condition for no label
@@ -122,25 +116,30 @@ def train_rule():
             lst.append(img_dict)
             index += 1
     try:
-        rule = FOIL(lst)
+        rule = FOIL(lst)[0]
     except Exception as ex:
-        return {'code': 4,
-                'msg': 'ERROR in FOIL',
+        return {'msg': 'ERROR in FOIL',
                 'errorLog': ex
-                }
-
+                }, 500
+    # Loop over add into clauses
     for key in rule:
         flag = 0
-        if not target_collect['rules']:
-            target_collect['rules'].append({'label': key, 'value': rule[key]})
-        else:
-            for rules in target_collect['rules']:
-                if key == rules['label']:
-                    rules['value'] = rule[key]
-                    flag = 1
-            if flag == 0:
-                target_collect['rules'].append({'label': key, 'value': rule[key]})
-            # print(target_collect['rules'])
+        for rules in target_collect['rules']:
+            if key == rules['label']:
+                # rules['value'] = rule[key]
+                rules['value'].clear()
+                for val in rule[key]:
+                    for clause in val:
+                        new_cl = {'value': clause}
+                        rules['value'].append(new_cl)
+                flag = 1
+        if flag == 0:
+            new_rule = {'label': key, 'value': []}
+            for val in rule[key]:
+                for clause in val:
+                    new_cl = {'value': clause}
+                    new_rule['value'].append(new_cl)
+            target_collect['rules'].append(new_rule)
 
     target_collect_lst = wrksp['collections']
     i = 0
@@ -152,10 +151,9 @@ def train_rule():
         i += 1
 
     if flag == 0:
-        return {'code': 2,
-                'msg': 'No such collection!',
+        return {'msg': 'No such collection!',
                 'errorLog': None
-                }
+                }, 404
 
     flt = {'_id': body['workspaceID']}
     new_wrksp = {'$set': {'collections': target_collect_lst}}
@@ -164,12 +162,11 @@ def train_rule():
     try:
         mongo.db.Workspace.update_one(flt, new_wrksp)
     except Exception as err:
-        return {'code': 2,
-                'msg': 'Fail to Update!',
+        return {'msg': 'Fail to Update!',
                 'errorLog': err
-                }
+                }, 400
 
-    return {'code': 0, 'msg': "success", 'errorLog': None}
+    return {'msg': "success", 'errorLog': None}, 200
 
 # @app.route('/flaskadmin')
 # def mainpage():
