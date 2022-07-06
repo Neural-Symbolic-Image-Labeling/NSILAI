@@ -68,10 +68,6 @@ def pretrain_label(x,imageId):
     buf.write(x)  # 指针对象写入数据
     buf.seek(0)
     im = Image.open(buf).convert('RGB')
-    #print(im)
-
-    # im = Image.open('Case1.png')
-    # print(im)
 
     def overlap(x1, y1, x2, y2, x3, y3, x4, y4):
         s1 = [x1, y1, x2, y2]
