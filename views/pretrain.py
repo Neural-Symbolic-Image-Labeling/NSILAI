@@ -1,9 +1,8 @@
 from PIL import Image
-import matplotlib.pyplot as plt
 from transformers import DetrFeatureExtractor, DetrForObjectDetection
 import torch
+import six
 import torchvision.transforms as transforms
-import json
 torch.set_grad_enabled(False)
 # classes
 feature_extractor = DetrFeatureExtractor.from_pretrained('facebook/detr-resnet-50')
@@ -14,7 +13,7 @@ transforms = transforms.Compose([
 ])
 
 
-def pretrain_label(x):
+def pretrain_label(x,imageId):
     CLASSES = [
         'N/A', 'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus',
         'train', 'truck', 'boat', 'traffic light', 'fire hydrant', 'N/A',
@@ -31,14 +30,6 @@ def pretrain_label(x):
         'book', 'clock', 'vase', 'scissors', 'teddy bear', 'hair drier',
         'toothbrush'
     ]
-
-    # # colors for visualization
-    # COLORS = [[0.000, 0.447, 0.741], [0.850, 0.325, 0.098], [0.929, 0.694, 0.125],
-    #           [0.494, 0.184, 0.556], [0.466, 0.674, 0.188], [0.301, 0.745, 0.933]]
-
-
-    # standard PyTorch mean-std input image normalization
-
 
     # for output bounding box post-processing
     def box_cxcywh_to_xyxy(x):
@@ -67,12 +58,20 @@ def pretrain_label(x):
         bboxes_scaled = rescale_bboxes(outputs['pred_boxes'][0, keep], im.size)
         return probas[keep], bboxes_scaled
 
-    with open('./pics.png', mode='w+b') as fi:
-        fi.write(x)
-    # url = 'http://images.cocodataset.org/val2017/000000125062.jpg'
-    # im = Image.open(requests.get(url, stream=True).raw)
-    im = Image.open('pics.png').convert('RGB')
-    # im = Image.open('125062.jpg')
+    # with open('./pics.png', mode='w+b') as fi:
+    #     fi.write(x)
+    # # url = 'http://images.cocodataset.org/val2017/000000125062.jpg'
+    # # im = Image.open(requests.get(url, stream=True).raw)
+    # im = Image.open('pics.png').convert('RGB')
+
+    buf = six.BytesIO()  # 获取指针（地址）对象
+    buf.write(x)  # 指针对象写入数据
+    buf.seek(0)
+    im = Image.open(buf).convert('RGB')
+    #print(im)
+
+    # im = Image.open('Case1.png')
+    # print(im)
 
     def overlap(x1, y1, x2, y2, x3, y3, x4, y4):
         s1 = [x1, y1, x2, y2]
@@ -95,32 +94,21 @@ def pretrain_label(x):
             res = (temp_y2 - temp_y1) * (temp_x2 - temp_x1)
         return (res)
 
-    def plot_results(pil_img, prob, boxes, data):
-        plt.figure(figsize=(16, 10))
-        plt.imshow(pil_img)
-        ax = plt.gca()
+    def plot_results(prob, boxes, data):
         sum = 0
         for p, (xmin, ymin, xmax, ymax) in zip(prob, boxes.tolist()):
-            ax.add_patch(plt.Rectangle((xmin, ymin), xmax - xmin, ymax - ymin,
-                                       fill=False,  linewidth=3))
-
             record[sum].append(xmin)
             record[sum].append(ymin)
             record[sum].append(xmax)
             record[sum].append(ymax)
             cl = p.argmax()
-            text = f'{CLASSES[cl]}: {p[cl]:0.2f}'
-            ax.text(xmin, ymin, text, fontsize=15,
-                    bbox=dict(facecolor='yellow', alpha=0.5))
-            print(sum, record[sum], text)
+            #text = f'{CLASSES[cl]}: {p[cl]:0.2f}'
+            #print(sum, record[sum], text)
             data['object'][sum] = {}
             data['object'][sum]['coordinate'] = record[sum]
             data['object'][sum]['name'] = CLASSES[cl]
             data['object'][sum]['prob'] = float(p[cl])
-
             sum = sum + 1
-        plt.axis('off')
-        plt.show()
         return (record, sum, data)
 
     record = []
@@ -129,12 +117,11 @@ def pretrain_label(x):
     model = DetrForObjectDetection.from_pretrained('facebook/detr-resnet-50')
     scores, boxes = detect(im, model, transforms)
     data = {
-        "imageId": 1,
+        "imageId": imageId,
         "object": {},
         "overlap": {},
     }
-
-    record, sum, data = plot_results(im, scores, boxes, data)
+    record, sum, data = plot_results(scores, boxes, data)
     total = 0
     for i in range(sum):
         for j in range(i + 1, sum):
@@ -156,5 +143,5 @@ def pretrain_label(x):
 
 # if __name__ == '__main__':
 #     x = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x10\x00\x00\x00\x10\x08\x06\x00\x00\x00\x1f\xf3\xffa\x00\x00\x00\tpHYs\x00\x00\x0b\x13\x00\x00\x0b\x13\x01\x00\x9a\x9c\x18\x00\x00\x01\xd6IDAT8\x8d\x8d\x93MHTQ\x14\xc7\x7f\xe7\xf2\xfcz\xe3\x84\xd1\x17\xd8\xa4F\x8b"\x17\x83\xcc`IDn\xa2E\xcb\xc4U\xb4\xa84\xdaI\x0b\xa9\x90x\xab\xb6\x12\xb4\xa8]\x16A\x04\x11\xd1@\x9b\xc0$2\xc3\xc2\x82\x886\xd2\x84F\x0b%\x07f\xa6\xc97\xf3\xdei\xe1\xa4\xaf\xf7f\xac\xb3\xba\\~\xff\xf3?\xe7\xdcs\x85:\x91r\x9e\xda\x94\xd8\xde\xd8\xd2Px\xed\x9cX\x01\xd1Z\x9c\x84/\xd2c\xcf\xf6\xf7t\xb6\xdd\xff\xbaTH\xfd(\xac\x02\xa0\xf0\xcd \x97f\xaf\x9f|\x18\xe6M$\xa3VN\';\xb6\xa6\xf6\xedl\r\xba\xec\x06\xbdU\xab\x02+|\xe1\xfb&315?_\xb5N"\x8cT\xab\xd8R7A\xbf3\xd9\\,\x17\xcf(rX\xd0`U\x89 \xac\x8a0\xd3\xd5I39\xe9\xc9\xe6\xd6\x13\xe4\xdd\x9f\xd7\x04\xae\x80RsRU=/\xba\x9a\x88y_(\xe3\xeb\x9b\xc4\x80\x1cZ|l\xd6z\xd4\xe1\xfa\xba\xf5xO\xdc\xfd3\x18\x83\xc8e\x00\xeb\xc8\xe8\x93\xf8*l\x0b\x80\x9e*\x0fD\xc8nX\x93\x07\xeb.\x9e9\x1bx\xb7\xa4*\xc6ze\xcf\x15\xd3n\xda\x05\x1a\x01Duhv\xe0\xe2K*f\x18Q\xbb\n\xb7\x01\x13 \xc7\x03FM|\xdaa\x0b@\xfajf\x1a\xe8\x03p\xdd\x86\xd6\x0f\x83\xe7\xde\x82\x1c\xf8GK\xdf\xa5w\xa1\xdd\x00\xf8\xc6\x8c\x01y\x80\xf3\x1d\x99\xca\x7f\x88A\xe4\x1e\x047\xd1qL7\x07\xed\x8f\xc7\x06\x7f\x11\xdbS\x0e\x90\x8f@\xb3!\xf52\xb1\xd2M\xe9^*DVY\'\xb1\xfeJ\xa0\xdc\xc6\xc8\xe7\xb5\xb3?\'\xbd\x8bSA>\xb2\xca\xf4\xe3!\xacl\x98q\x81\xf6\x91q\xe2}\xe3 G\xc3x\xf4/\x08\x8a\xe7\x9fBx\x07\xf8\x00\xe4\x9e\x17q\x17\xee\xe0\x96nD\x0c7\x0b\x9dN\xb4\xe8\xcc\xde]\x9b1\xbf\x01\xaf\x97\x97\n\xc4\xff\xc3\xf1\x00\x00\x00\x00IEND\xaeB`\x82'
-#     pretrain_label(x)
+#     pretrain_label(x,2)
 
