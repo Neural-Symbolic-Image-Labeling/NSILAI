@@ -3,7 +3,7 @@ from flask_cors import CORS
 from flask_pymongo import PyMongo
 import base64
 from views.pretrain import pretrain_label
-from views.foil import FOIL
+from views.FOIL import FOIL
 
 import os
 
