@@ -125,10 +125,10 @@ def pretrain_label(x,imageId):
                            record[j][0], record[j][1], record[j][2], record[j][3])
             if (size > 0):
                 print(i, j, size)
-                data['overlap'][total] = {}
-                data['overlap'][total]['idA'] = i
-                data['overlap'][total]['idB'] = j
-                data['overlap'][total]['area'] = size
+                data['overlap'][str(total)] = {}
+                data['overlap'][str(total)]['idA'] = i
+                data['overlap'][str(total)]['idB'] = j
+                data['overlap'][str(total)]['area'] = size
                 total = total + 1
     y=[]
     y.append(data)
