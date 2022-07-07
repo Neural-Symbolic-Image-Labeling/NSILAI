@@ -1,6 +1,7 @@
-from app import app
 from flask import jsonify, request
 import base64
+
+
 # import json
 #
 # with open('data.json', 'r') as json_file:
@@ -122,3 +123,47 @@ import base64
 #
 # def send_rule():
 #     return {'rule1': [[1, 2, 3], [1, 2, 3]], 'rule2': [[1, 2, 3], [1, 2, 3]]}
+
+
+# @app.route('/flaskadmin/pretrain', methods=['GET'])
+# @app.route('/api/img/pre/<imgid>', methods=['POST'])
+# def pretrain(imgid):
+#     # image_id = request.args.get('_id')
+#     # base64_img_bytes = image_id.encode('utf-8')
+#     target = mongo.db.image.find_one({'_id': imgid})
+#     if target is None:
+#         return {'msg': 'No such image, id is invalid!',
+#                 'errorLog': None
+#                 }, 404
+#     base64_img_bytes = target['data']
+#     base64_img = base64_img_bytes[base64_img_bytes.rfind(','):]
+#
+#     decoded_image_data = base64.b64decode(base64_img)
+#     # bin_im = "".join(["{:08b}".format(x) for x in decoded_image_data])
+#
+#     # Run pretrained model
+#     # json_res = pretrain_label(decoded_image_data)
+#
+#     # Saving the output json to specific image
+#     # data = json.load(json_res)
+#
+#     # For testing
+#     try:
+#         data = pretrain_label(decoded_image_data, imgid)
+#     except Exception as err:
+#         return {'msg': 'ERROR in pre-train',
+#                 'errorLog': err
+#                 }, 500
+#
+#     # data = json.load(data)
+#     interpretation = {k: data[0][k] for k in ['object', 'overlap'] if k in data[0]}
+#     # print(interpretation)
+#     new_int = {'$set': {'interpretation': interpretation}}
+#     try:
+#         mongo.db.image.update_one(target, new_int)
+#     except Exception as err:
+#         return {'msg': 'Fail to Update!',
+#                 'errorLog': err
+#                 }, 400
+#
+#     return {'code': 0, 'msg': "success", 'errorLog': None}, 200

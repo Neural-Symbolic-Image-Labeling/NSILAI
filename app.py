@@ -1,24 +1,24 @@
+from bson import ObjectId
 from flask import *
 from flask_cors import CORS
 from flask_pymongo import PyMongo
 import base64
 from views.pretrain import pretrain_label
 from views.foil import FOIL
-from itertools import izip
 
 
 import os
 
 app = Flask(__name__)
 # CORS
-cors = CORS(app, resources={r"/api/*": {"origins": os.getenv("CORS_ORIGINS", "*")}})
+cors = CORS(app)
 # configuration
 # app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'nsil pog')
 
 app.config.update(
     MONGO_HOST='localhost',
     MONGO_PORT=27017,
-    MONGO_URI='mongodb://localhost:27017/NISL'
+    MONGO_URI='mongodb://localhost:27017/NSIL'
 )
 
 mongo = PyMongo(app)
@@ -34,12 +34,13 @@ mongo = PyMongo(app)
 # Post
 # return status
 
+
 # @app.route('/flaskadmin/pretrain', methods=['GET'])
-@app.route('/api/img/pre/<img_id>', methods=['POST'])
-def pretrain(img_id):
+@app.route('/api/img/pre/<imgid>', methods=['POST'])
+def pretrain(imgid):
     # image_id = request.args.get('_id')
     # base64_img_bytes = image_id.encode('utf-8')
-    target = mongo.db.image.find_one({'_id': img_id})
+    target = mongo.db.images.find_one({'_id': ObjectId(imgid)})
     if target is None:
         return {'msg': 'No such image, id is invalid!',
                 'errorLog': None
@@ -58,10 +59,10 @@ def pretrain(img_id):
 
     # For testing
     try:
-        data = pretrain_label(decoded_image_data, img_id)
+        data = pretrain_label(decoded_image_data, imgid)
     except Exception as err:
         return {'msg': 'ERROR in pre-train',
-                'errorLog': err
+                'errorLog': str(err)
                 }, 500
 
     # data = json.load(data)
@@ -69,10 +70,10 @@ def pretrain(img_id):
     # print(interpretation)
     new_int = {'$set': {'interpretation': interpretation}}
     try:
-        mongo.db.image.update_one(target, new_int)
+        mongo.db.images.update_one(target, new_int)
     except Exception as err:
         return {'msg': 'Fail to Update!',
-                'errorLog': err
+                'errorLog': str(err)
                 }, 400
 
     return {'code': 0, 'msg': "success", 'errorLog': None}, 200
@@ -87,7 +88,7 @@ def pretrain(img_id):
 @app.route('/api/autolabel', methods=['POST'])
 def train_rule():
     body = request.get_json()
-    wrksp = mongo.db.Workspance.find_one({'_id': body['workspaceID']})
+    wrksp = mongo.db.workspaces.find_one({'_id': ObjectId(body['workspaceID'])})
     if wrksp is None:
         return {'msg': 'No such workspace!',
                 'errorLog': None
@@ -95,7 +96,7 @@ def train_rule():
     target_collect = None
 
     for collect in wrksp['collections']:
-        if collect['_id'] == body['collectionID']:
+        if collect['_id'] == ObjectId(body['collectionID']):
             target_collect = collect
     if target_collect is None:
         return {'msg': 'No such image collection!',
@@ -111,18 +112,33 @@ def train_rule():
     index = 1
     # Add condition for no label
     for img in image_metas:
-        img_init = mongo.db.image.find_one({'_id': img['imageId']})
-        if not len(img['labels']) == 0:
-            img_dict = {'imageID': index, 'type': img['labels'][0], 'object': img_init['interpretation']['object'],
-                        'overlap': img_init['interpretation']['overlap']}
-            lst.append(img_dict)
-            index += 1
+        img_init = mongo.db.images.find_one({'_id': ObjectId(img['imageId'])})
+        if img_init is None:
+            return {'msg': 'No such image!',
+                    'errorLog': None
+                    }, 404
+        # if not len(img['labels']) == 0:
+        #     img_dict = {'imageID': index, 'type': img['labels'][0], 'object': img_init['interpretation']['object'],
+        #                 'overlap': img_init['interpretation']['overlap']}
+        #     lst.append(img_dict)
+        #     index += 1
+        img_dict = {'imageID': index, 'type': 'life', 'object': img_init['interpretation']['object'],
+                    'overlap': img_init['interpretation']['overlap']}
+        lst.append(img_dict)
+        index += 1
     try:
+        print(lst)
+        print("FOIL input success")
+        a = FOIL(lst)
+        print("FOIL success")
+        print(a)
         rule = FOIL(lst)[0]
         natural_rule = FOIL(lst)[1]
-    except Exception as ex:
+        print(rule)
+        print(natural_rule)
+    except Exception as err:
         return {'msg': 'ERROR in FOIL',
-                'errorLog': ex
+                'errorLog': str(err)
                 }, 500
     # Loop over add into clauses
     for key in rule:
@@ -182,14 +198,14 @@ def train_rule():
 
     # Need to be changed to update_one
     try:
-        mongo.db.Workspace.update_one(flt, new_wrksp)
+        mongo.db.workspaces.update_one(flt, new_wrksp)
     except Exception as err:
         return {'msg': 'Fail to Update!',
-                'errorLog': err
+                'errorLog': str(err)
                 }, 400
 
     return {'msg': "success", 'errorLog': None}, 200
 
-# @app.route('/flaskadmin')
-# def mainpage():
-#     return render_template("index.html")
+@app.route('/flaskadmin')
+def mainpage():
+    return render_template("index.html")
