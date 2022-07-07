@@ -100,10 +100,10 @@ def pretrain_label(x,imageId):
             cl = p.argmax()
             #text = f'{CLASSES[cl]}: {p[cl]:0.2f}'
             #print(sum, record[sum], text)
-            data['object'][sum] = {}
-            data['object'][sum]['coordinate'] = record[sum]
-            data['object'][sum]['name'] = CLASSES[cl]
-            data['object'][sum]['prob'] = float(p[cl])
+            data['object'][str(sum)] = {}
+            data['object'][str(sum)]['coordinate'] = record[sum]
+            data['object'][str(sum)]['name'] = CLASSES[cl]
+            data['object'][str(sum)]['prob'] = float(p[cl])
             sum = sum + 1
         return (record, sum, data)
 
