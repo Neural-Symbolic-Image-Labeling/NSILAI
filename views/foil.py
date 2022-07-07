@@ -172,46 +172,44 @@ def get_total_list1(input_list):
     total_object=[]
     total_list=[]
     image_number=1
-    for dictionary in input_list:
-        for image_num in range(len(dictionary)):
-            for objects_num in range(len(dictionary[image_num]['object'])):
-                name=dictionary[image_num]['object'][str(objects_num)]['name']
-                if name not in total_object:
-                    total_object.append(name)
-    for dictionary in input_list:
-        for image_num in range(len(dictionary)):
-            image_list=[]
-            string=dictionary[image_num]['type']+"(image"+str(image_number)+")"
-            image_list.append(string)
-            position_list=[]
-            for objects_num in range(len(dictionary[image_num]['object'])):
-                name=dictionary[image_num]['object'][str(objects_num)]['name']
-                position=total_object.index(name)
-                if position not in position_list:
-                    position_list.append(position)
-            object_numbers=[0 for i in range(len(position_list))]
-            for objects_num in range(len(dictionary[image_num]['object'])):
-                name=dictionary[image_num]['object'][str(objects_num)]['name']
-                position=total_object.index(name)
-                object_numbers[position_list.index(position)]+=1
-            for index,objects in enumerate(position_list):
-                has=total_object[objects]+"(image"+str(image_number)+","+str(objects)+")"
-                num="num"+"("+str(objects)+","+str(object_numbers[index])+")"
-                image_list.append(has)
-                image_list.append(num)
-            for objects_num in range(len(dictionary[image_num]['overlap'])):
-                object1_name=dictionary[image_num]['object'][str(dictionary[image_num]['overlap'][str(objects_num)]["idA"])]['name']
-                object2_name=dictionary[image_num]['object'][str(dictionary[image_num]['overlap'][str(objects_num)]["idB"])]['name']
-                position1=total_object.index(object1_name)
-                position2=total_object.index(object2_name)
-                if position1<position2:
-                    overlap="overlap("+str(position1)+","+str(position2)+")"
-                else:
-                    overlap="overlap("+str(position2)+","+str(position1)+")"
-                if overlap not in image_list:
-                    image_list.append(overlap)
-            total_list.append(image_list)
-            image_number+=1
+    for image_num in range(len(input_list)):
+        for objects_num in range(len(input_list[image_num]['object'])):
+            name=input_list[image_num]['object'][str(objects_num)]['name']
+            if name not in total_object:
+                total_object.append(name)
+    for image_num in range(len(input_list)):
+        image_list=[]
+        string=input_list[image_num]['type']+"(image"+str(image_number)+")"
+        image_list.append(string)
+        position_list=[]
+        for objects_num in range(len(input_list[image_num]['object'])):
+            name=input_list[image_num]['object'][str(objects_num)]['name']
+            position=total_object.index(name)
+            if position not in position_list:
+                position_list.append(position)
+        object_numbers=[0 for i in range(len(position_list))]
+        for objects_num in range(len(input_list[image_num]['object'])):
+            name=input_list[image_num]['object'][str(objects_num)]['name']
+            position=total_object.index(name)
+            object_numbers[position_list.index(position)]+=1
+        for index,objects in enumerate(position_list):
+            has=total_object[objects]+"(image"+str(image_number)+","+str(objects)+")"
+            num="num"+"("+str(objects)+","+str(object_numbers[index])+")"
+            image_list.append(has)
+            image_list.append(num)
+        for objects_num in range(len(input_list[image_num]['overlap'])):
+            object1_name=input_list[image_num]['object'][str(input_list[image_num]['overlap'][str(objects_num)]["idA"])]['name']
+            object2_name=input_list[image_num]['object'][str(input_list[image_num]['overlap'][str(objects_num)]["idB"])]['name']
+            position1=total_object.index(object1_name)
+            position2=total_object.index(object2_name)
+            if position1<position2:
+                overlap="overlap("+str(position1)+","+str(position2)+")"
+            else:
+                overlap="overlap("+str(position2)+","+str(position1)+")"
+            if overlap not in image_list:
+                image_list.append(overlap)
+        total_list.append(image_list)
+        image_number+=1
     return total_list
 
 def threshold(target,clause,total_list):
