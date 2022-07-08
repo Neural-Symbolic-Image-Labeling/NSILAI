@@ -122,13 +122,19 @@ def train_rule():
         #                 'overlap': img_init['interpretation']['overlap']}
         #     lst.append(img_dict)
         #     index += 1
-        img_dict = {'imageID': index, 'type': 'life', 'object': img_init['interpretation']['object'],
-                    'overlap': img_init['interpretation']['overlap']}
+        #### Only for testing
+        if index == 1:
+            img_dict = {'imageID': index, 'type': 'non-life', 'object': img_init['interpretation']['object'],
+                        'overlap': img_init['interpretation']['overlap']}
+        else:
+            img_dict = {'imageID': index, 'type': 'life', 'object': img_init['interpretation']['object'],
+                        'overlap': img_init['interpretation']['overlap']}
         lst.append(img_dict)
         index += 1
     try:
         print(lst)
         print("FOIL input success")
+
         a = FOIL(lst)
         print("FOIL success")
         print(a)
@@ -178,7 +184,8 @@ def train_rule():
                 i += 1
 
             target_collect['rules'].append(new_rule)
-
+    print("This is target_collection[rules]")
+    print(target_collect['rules'])
     target_collect_lst = wrksp['collections']
     i = 0
     flag = 0
@@ -187,13 +194,14 @@ def train_rule():
             target_collect_lst[i] = target_collect
             flag = 1
         i += 1
-
+    print("This is target collection list")
+    print(target_collect_lst)
     if flag == 0:
         return {'msg': 'No such collection!',
                 'errorLog': None
                 }, 404
 
-    flt = {'_id': body['workspaceID']}
+    flt = {'_id': ObjectId(body['workspaceID'])}
     new_wrksp = {'$set': {'collections': target_collect_lst}}
 
     # Need to be changed to update_one
@@ -202,7 +210,7 @@ def train_rule():
     except Exception as err:
         return {'msg': 'Fail to Update!',
                 'errorLog': str(err)
-                }, 400
+                }, 404
 
     return {'msg': "success", 'errorLog': None}, 200
 
