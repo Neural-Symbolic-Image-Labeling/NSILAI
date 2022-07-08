@@ -152,4 +152,8 @@ def label(dict_list,rules):
     total_list1=get_total_list1(dict_list)
     total_list=get_total_list(total_list1)
     labels=labeling(total_list,rules)
+<<<<<<< HEAD
     return labels
+=======
+    return labels
+>>>>>>> a51f06438e78a2a4cbcc4591308bf3c542b379ce
