@@ -1,3 +1,4 @@
+from bson import ObjectId
 from flask import *
 from flask_cors import CORS
 from flask_pymongo import PyMongo
@@ -5,18 +6,19 @@ import base64
 from views.pretrain import pretrain_label
 from views.foil import FOIL
 
+
 import os
 
 app = Flask(__name__)
 # CORS
-cors = CORS(app, resources={r"/api/*": {"origins": os.getenv("CORS_ORIGINS", "*")}})
+cors = CORS(app)
 # configuration
 # app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'nsil pog')
 
 app.config.update(
     MONGO_HOST='localhost',
     MONGO_PORT=27017,
-    MONGO_URI='mongodb://localhost:27017/NISL'
+    MONGO_URI='mongodb://localhost:27017/NSIL'
 )
 
 mongo = PyMongo(app)
@@ -32,17 +34,17 @@ mongo = PyMongo(app)
 # Post
 # return status
 
+
 # @app.route('/flaskadmin/pretrain', methods=['GET'])
-@app.route('/flaskadmin/pretrain/<img_id>', methods=['POST'])
-def pretrain(img_id):
+@app.route('/api/img/pre/<imgid>', methods=['POST'])
+def pretrain(imgid):
     # image_id = request.args.get('_id')
     # base64_img_bytes = image_id.encode('utf-8')
-    target = mongo.db.image.find_one({'_id': img_id})
+    target = mongo.db.images.find_one({'_id': ObjectId(imgid)})
     if target is None:
-        return {'code': 2,
-                'msg': 'No such image, id is invalid!',
+        return {'msg': 'No such image, id is invalid!',
                 'errorLog': None
-                }
+                }, 404
     base64_img_bytes = target['data']
     base64_img = base64_img_bytes[base64_img_bytes.rfind(','):]
 
@@ -57,26 +59,24 @@ def pretrain(img_id):
 
     # For testing
     try:
-        data = pretrain_label(decoded_image_data)
+        data = pretrain_label(decoded_image_data, imgid)
     except Exception as err:
-        return {'code': 3,
-                'msg': 'ERROR in pre-train',
-                'errorLog': err
-                }
+        return {'msg': 'ERROR in pre-train',
+                'errorLog': str(err)
+                }, 500
 
     # data = json.load(data)
     interpretation = {k: data[0][k] for k in ['object', 'overlap'] if k in data[0]}
     # print(interpretation)
     new_int = {'$set': {'interpretation': interpretation}}
     try:
-        mongo.db.image.update_one(target, new_int)
+        mongo.db.images.update_one(target, new_int)
     except Exception as err:
-        return {'code': 2,
-                'msg': 'Fail to Update!',
-                'errorLog': err
-                }
+        return {'msg': 'Fail to Update!',
+                'errorLog': str(err)
+                }, 400
 
-    return {'code': 0, 'msg': "success", 'errorLog': None}
+    return {'code': 0, 'msg': "success", 'errorLog': None}, 200
 
 
 # @app.route('/flaskadmin/selectset', methods=['GET'])
@@ -85,63 +85,33 @@ def pretrain(img_id):
 
 
 # Classification
-@app.route('/flaskadmin/foil', methods=['POST'])
+@app.route('/api/autolabel', methods=['POST'])
 def train_rule():
     body = request.get_json()
-    wrksp = mongo.db.Workspance.find_one({'_id': body['workspaceID']})
+    wrksp = mongo.db.workspaces.find_one({'_id': ObjectId(body['workspaceID'])})
     if wrksp is None:
-        return {'code': 2,
-                'msg': 'No such workspace!',
+        return {'msg': 'No such workspace!',
                 'errorLog': None
-                }
+                }, 404
     target_collect = None
 
     for collect in wrksp['collections']:
-        if collect['_id'] == body['collectionID']:
+        if collect['_id'] == ObjectId(body['collectionID']):
             target_collect = collect
     if target_collect is None:
-        return {'code': 2,
-                'msg': 'No such image collection!',
+        return {'msg': 'No such image collection!',
                 'errorLog': None
-                }
+                }, 404
 
     image_metas = target_collect['images']
     if image_metas is []:
-        return {'code': 2,
-                'msg': 'No images in the collection!',
+        return {'msg': 'No images in the collection!',
                 'errorLog': None
-                }
+                }, 404
     lst = []
     index = 1
     # Add condition for no label
     for img in image_metas:
-        img_init = mongo.db.image.find_one({'_id': img['imageId']})
-        if not len(img['labels']) == 0:
-            img_dict = {'imageID': index, 'type': img['labels'][0], 'object': img_init['interpretation']['object'],
-                        'overlap': img_init['interpretation']['overlap']}
-            lst.append(img_dict)
-            index += 1
-    try:
-        rule = FOIL(lst)
-    except Exception as ex:
-        return {'code': 4,
-                'msg': 'ERROR in FOIL',
-                'errorLog': ex
-                }
-
-    for key in rule:
-        flag = 0
-        if not target_collect['rules']:
-            target_collect['rules'].append({'label': key, 'value': rule[key]})
-        else:
-            for rules in target_collect['rules']:
-                if key == rules['label']:
-                    rules['value'] = rule[key]
-                    flag = 1
-            if flag == 0:
-                target_collect['rules'].append({'label': key, 'value': rule[key]})
-            # print(target_collect['rules'])
-
         img_init = mongo.db.images.find_one({'_id': ObjectId(img['imageId'])})
         if img_init is None:
             return {'msg': 'No such image!',
@@ -227,27 +197,24 @@ def train_rule():
     print("This is target collection list")
     print(target_collect_lst)
     if flag == 0:
-        return {'code': 2,
-                'msg': 'No such collection!',
+        return {'msg': 'No such collection!',
                 'errorLog': None
-                }
+                }, 404
 
     flt = {'_id': ObjectId(body['workspaceID'])}
     new_wrksp = {'$set': {'collections': target_collect_lst}}
 
     # Need to be changed to update_one
     try:
-        mongo.db.Workspace.update_one(flt, new_wrksp)
+        mongo.db.workspaces.update_one(flt, new_wrksp)
     except Exception as err:
-        return {'code': 2,
-                'msg': 'Fail to Update!',
-                'errorLog': err
-                }
         return {'msg': 'Fail to Update!',
                 'errorLog': str(err)
                 }, 404
-    return {'code': 0, 'msg': "success", 'errorLog': None}
 
-# @app.route('/flaskadmin')
-# def mainpage():
-#     return render_template("index.html")
+    return {'msg': "success", 'errorLog': None}, 200
+
+@app.route('/flaskadmin')
+def mainpage():
+    return render_template("index.html")
+

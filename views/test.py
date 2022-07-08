@@ -482,4 +482,4 @@ import base64
 #                            '5': {'idA': 8, 'idB': 13, 'area': 414.3129944088869},
 #                            '6': {'idA': 10, 'idB': 13, 'area': 317.32206079829484}}}]
 # print(FOIL(input_list))
->>>>>>> a51f06438e78a2a4cbcc4591308bf3c542b379ce
+
