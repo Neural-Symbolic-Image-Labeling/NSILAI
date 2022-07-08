@@ -115,7 +115,6 @@ def train_rule():
     index = 1
     # Add condition for no label
     for img in image_metas:
-<<<<<<< HEAD
         img_init = mongo.db.image.find_one({'_id': img['imageId']})
         if not len(img['labels']) == 0:
             img_dict = {'imageID': index, 'type': img['labels'][0], 'object': img_init['interpretation']['object'],
@@ -143,7 +142,6 @@ def train_rule():
                 target_collect['rules'].append({'label': key, 'value': rule[key]})
             # print(target_collect['rules'])
 
-=======
         img_init = mongo.db.images.find_one({'_id': ObjectId(img['imageId'])})
         if img_init is None:
             return {'msg': 'No such image!',
@@ -218,7 +216,6 @@ def train_rule():
             target_collect['rules'].append(new_rule)
     print("This is target_collection[rules]")
     print(target_collect['rules'])
->>>>>>> a51f06438e78a2a4cbcc4591308bf3c542b379ce
     target_collect_lst = wrksp['collections']
     i = 0
     flag = 0
@@ -242,17 +239,13 @@ def train_rule():
     try:
         mongo.db.Workspace.update_one(flt, new_wrksp)
     except Exception as err:
-<<<<<<< HEAD
         return {'code': 2,
                 'msg': 'Fail to Update!',
                 'errorLog': err
                 }
-=======
         return {'msg': 'Fail to Update!',
                 'errorLog': str(err)
                 }, 404
->>>>>>> a51f06438e78a2a4cbcc4591308bf3c542b379ce
-
     return {'code': 0, 'msg': "success", 'errorLog': None}
 
 # @app.route('/flaskadmin')
