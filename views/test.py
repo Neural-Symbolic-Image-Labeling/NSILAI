@@ -104,8 +104,8 @@ import base64
 #
 # def send_rule():
 #     return {'rule1': [[1, 2, 3], [1, 2, 3]], 'rule2': [[1, 2, 3], [1, 2, 3]]}
-<<<<<<< HEAD
-=======
+# <<<<<<< HEAD
+# =======
 
 
 # @app.route('/flaskadmin/pretrain', methods=['GET'])
@@ -181,9 +181,46 @@ import base64
 #                            '10': {'idA': 5, 'idB': 6, 'area': 23297.679860349745}}}, {'imageId': 2, 'type': 'life',
 #                                                                                       'object': {'0': {
 #                                                                                           'coordinate': [
-#                                                                                               186.47589111328125,
+#   Previous version of rule update in foil flask method                                                                                            186.47589111328125,
 #                                                                                               355.7585144042969,
-#                                                                                               220.93783569335938,
+#     # Loop over add into clauses
+#     for key in rule:
+#         flag = 0
+#         for rules in target_collect['rules']:
+#             if key == rules['label']:
+#                 # rules['value'] = rule[key]
+#                 rules['value'].clear()
+#                 # for val in rule[key]:
+#                 #     for clause in val:
+#                 #         new_cl = {'value': clause}
+#                 #         rules['value'].append(new_cl)
+#                 i = 0
+#                 j = 0
+#                 while i < len(rule[key]):
+#                     while j < len(rule[key][i]):
+#                         new_cl = {'value': rule[key][i][j],
+#                                   'naturalValue': natural_rule[key][i][j]}
+#                         rules['value'].append(new_cl)
+#                         j += 1
+#                     i += 1
+#                 flag = 1
+#         if flag == 0:
+#             new_rule = {'label': key, 'value': []}
+#             # for val in rule[key]:
+#             #     for clause in val:
+#             #         new_cl = {'value': clause}
+#             #         new_rule['value'].append(new_cl)
+#             i = 0
+#             j = 0
+#             while i < len(rule[key]):
+#                 while j < len(rule[key][i]):
+#                     new_cl = {'value': rule[key][i][j],
+#                               'naturalValue': natural_rule[key][i][j]}
+#                     new_rule['value'].append(new_cl)
+#                     j += 1
+#                 i += 1
+#
+#             target_collect['rules'].append(new_rule)                                                                                              220.93783569335938,
 #                                                                                               387.45086669921875],
 #                                                                                           'name': 'knife',
 #                                                                                           'prob': 0.863101601600647},

@@ -5,7 +5,7 @@ from flask_pymongo import PyMongo
 import base64
 from views.pretrain import pretrain_label
 from views.foil import FOIL
-
+from views.label import label
 
 import os
 
@@ -134,56 +134,29 @@ def train_rule():
     try:
         print(lst)
         print("FOIL input success")
-
-        a = FOIL(lst)
-        print("FOIL success")
-        print(a)
         rule = FOIL(lst)[0]
         natural_rule = FOIL(lst)[1]
         print(rule)
         print(natural_rule)
+        print("FOIL success")
     except Exception as err:
         return {'msg': 'ERROR in FOIL',
                 'errorLog': str(err)
                 }, 500
-    # Loop over add into clauses
-    for key in rule:
-        flag = 0
-        for rules in target_collect['rules']:
-            if key == rules['label']:
-                # rules['value'] = rule[key]
-                rules['value'].clear()
-                # for val in rule[key]:
-                #     for clause in val:
-                #         new_cl = {'value': clause}
-                #         rules['value'].append(new_cl)
-                i = 0
-                j = 0
-                while i < len(rule[key]):
-                    while j < len(rule[key][i]):
-                        new_cl = {'value': rule[key][i][j],
-                                  'naturalValue': natural_rule[key][i][j]}
-                        rules['value'].append(new_cl)
-                        j += 1
-                    i += 1
-                flag = 1
-        if flag == 0:
-            new_rule = {'label': key, 'value': []}
-            # for val in rule[key]:
-            #     for clause in val:
-            #         new_cl = {'value': clause}
-            #         new_rule['value'].append(new_cl)
-            i = 0
-            j = 0
-            while i < len(rule[key]):
-                while j < len(rule[key][i]):
-                    new_cl = {'value': rule[key][i][j],
-                              'naturalValue': natural_rule[key][i][j]}
-                    new_rule['value'].append(new_cl)
-                    j += 1
-                i += 1
 
-            target_collect['rules'].append(new_rule)
+    # Loop over add into clauses and overwrite rules
+    target_collect['rules'].clear()
+    for key in rule:
+        new_rule = {'label': key, 'value': []}
+        #### Modified version for more predicate in single clauses
+        i = 0
+        while i < len(rule[key]):
+            new_cl = {'value': rule[key][i],
+                      'naturalValue': natural_rule[key][i]}
+            new_rule['value'].append(new_cl)
+            i += 1
+        target_collect['rules'].append(new_rule)
+
     print("This is target_collection[rules]")
     print(target_collect['rules'])
     target_collect_lst = wrksp['collections']
@@ -214,7 +187,123 @@ def train_rule():
 
     return {'msg': "success", 'errorLog': None}, 200
 
-@app.route('/flaskadmin')
-def mainpage():
-    return render_template("index.html")
 
+# Labeling
+@app.route('/api/label', methods=['POST'])
+def label_all():
+    body = request.get_json()
+    wrksp = mongo.db.workspaces.find_one({'_id': ObjectId(body['workspaceID'])})
+    if wrksp is None:
+        return {'msg': 'No such workspace!',
+                'errorLog': None
+                }, 404
+    target_collect = None
+
+    for collect in wrksp['collections']:
+        if collect['_id'] == ObjectId(body['collectionID']):
+            target_collect = collect
+    if target_collect is None:
+        return {'msg': 'No such image collection!',
+                'errorLog': None
+                }, 404
+
+    image_metas = target_collect['images']
+    if image_metas is []:
+        return {'msg': 'No images in the collection!',
+                'errorLog': None
+                }, 404
+    lst = []
+    img_id_lst = []
+    index = 0
+    # Image input
+    for img in image_metas:
+        img_init = mongo.db.images.find_one({'_id': ObjectId(img['imageId'])})
+        if img_init is None:
+            return {'msg': 'No such image!',
+                    'errorLog': None
+                    }, 404
+        if (not img["labeled"]) or (img["labeled"] and not img["manual"]):
+            img_dict = {'imageID': index, 'type': img['labels'][0], 'object': img_init['interpretation']['object'],
+                        'overlap': img_init['interpretation']['overlap']}
+            lst.append(img_dict)
+            img_id_lst.append(index)
+        index += 1
+        #### Only for testing
+        # if index == 1:
+        #     img_dict = {'imageID': index, 'type': 'non-life', 'object': img_init['interpretation']['object'],
+        #                 'overlap': img_init['interpretation']['overlap']}
+        # else:
+        #     img_dict = {'imageID': index, 'type': 'life', 'object': img_init['interpretation']['object'],
+        #                 'overlap': img_init['interpretation']['overlap']}
+        # lst.append(img_dict)
+        # index += 1
+
+    # Rule input
+    rules = target_collect['rules']
+    if rules is []:
+        return {'msg': 'No rules in the collection!',
+                'errorLog': None
+                }, 404
+    rule_dict = {}
+    for rule in rules:
+        rule_dict[rule['label']] = []
+        for val in rule['value']:
+            rule_dict[rule['label']].append(val['value'])
+
+    try:
+        print(lst)
+        print(rule_dict)
+        print("label input success")
+
+        labels = label(lst, rule_dict)
+
+    except Exception as err:
+        return {'msg': 'ERROR in Apply Rules (labeling)',
+                'errorLog': str(err)
+                }, 500
+
+    if len(img_id_lst) != len(labels):
+        return {'msg': 'Label method return insufficient labels based on input images',
+                'errorLog': None
+                }, 500
+
+    # Apply new labels in
+
+    i = 0
+    while i < len(labels):
+        target_collect['images'][img_id_lst[i]]['labels']['name'] = labels[i]
+        # Later will apply coordinates
+        i += 1
+
+    # Apply new collection
+    target_collect_lst = wrksp['collections']
+    i = 0
+    flag = 0
+    while i < len(target_collect_lst):
+        if target_collect_lst[i]['_id'] == target_collect['_id']:
+            target_collect_lst[i] = target_collect
+            flag = 1
+        i += 1
+    print("This is target collection list")
+    print(target_collect_lst)
+    if flag == 0:
+        return {'msg': 'No such collection!',
+                'errorLog': None
+                }, 404
+
+    flt = {'_id': ObjectId(body['workspaceID'])}
+    new_wrksp = {'$set': {'collections': target_collect_lst}}
+
+    try:
+        mongo.db.workspaces.update_one(flt, new_wrksp)
+    except Exception as err:
+        return {'msg': 'Fail to Update!',
+                'errorLog': str(err)
+                }, 404
+
+    return {'msg': "success", 'errorLog': None}, 200
+
+#
+# @app.route('/flaskadmin')
+# def mainpage():
+#     return render_template("index.html")
