@@ -147,18 +147,24 @@ def train_rule():
     # Loop over add into clauses and overwrite rules
     target_collect['rules'].clear()
     for key in rule:
-        new_rule = {'label': key, 'value': []}
+        new_rule = {'name': key, 'clauses': []}
         #### Modified version for more predicate in single clauses
         i = 0
         while i < len(rule[key]):
-            new_cl = {'value': rule[key][i],
-                      'naturalValue': natural_rule[key][i]}
-            new_rule['value'].append(new_cl)
+            new_cl = []
+            j = 0
+            while j < len(rule[key][i]):
+                new_lit = {'literal': rule[key][i][j],
+                          'naturalValue': natural_rule[key][i][j]}
+                new_cl.append(new_lit)
+            new_rule['clauses'].append(new_cl)
             i += 1
         target_collect['rules'].append(new_rule)
 
     print("This is target_collection[rules]")
     print(target_collect['rules'])
+
+    # Updating workspace
     target_collect_lst = wrksp['collections']
     i = 0
     flag = 0
@@ -177,7 +183,6 @@ def train_rule():
     flt = {'_id': ObjectId(body['workspaceID'])}
     new_wrksp = {'$set': {'collections': target_collect_lst}}
 
-    # Need to be changed to update_one
     try:
         mongo.db.workspaces.update_one(flt, new_wrksp)
     except Exception as err:
@@ -246,9 +251,12 @@ def label_all():
                 }, 404
     rule_dict = {}
     for rule in rules:
-        rule_dict[rule['label']] = []
-        for val in rule['value']:
-            rule_dict[rule['label']].append(val['value'])
+        rule_dict[rule['name']] = []
+        for clause in rule['clauses']:
+            cla_lst = []
+            for lit in clause:
+                cla_lst.append(lit['literal'])
+            rule_dict[rule['name']].append(cla_lst)
 
     try:
         print(lst)
