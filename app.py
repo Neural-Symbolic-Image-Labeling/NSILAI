@@ -164,60 +164,9 @@ def train_rule():
     print("This is target_collection[rules]")
     print(target_collect['rules'])
 
-    # Updating workspace
-    target_collect_lst = wrksp['collections']
-    i = 0
-    flag = 0
-    while i < len(target_collect_lst):
-        if target_collect_lst[i]['_id'] == target_collect['_id']:
-            target_collect_lst[i] = target_collect
-            flag = 1
-        i += 1
-    print("This is target collection list")
-    print(target_collect_lst)
-    if flag == 0:
-        return {'msg': 'No such collection!',
-                'errorLog': None
-                }, 404
-
-    flt = {'_id': ObjectId(body['workspaceID'])}
-    new_wrksp = {'$set': {'collections': target_collect_lst}}
-
-    try:
-        mongo.db.workspaces.update_one(flt, new_wrksp)
-    except Exception as err:
-        return {'msg': 'Fail to Update!',
-                'errorLog': str(err)
-                }, 404
-
-    return {'msg': "success", 'errorLog': None}, 200
-
-
-# Labeling
-@app.route('/api/label', methods=['POST'])
-def label_all():
-    body = request.get_json()
-    wrksp = mongo.db.workspaces.find_one({'_id': ObjectId(body['workspaceID'])})
-    if wrksp is None:
-        return {'msg': 'No such workspace!',
-                'errorLog': None
-                }, 404
-    target_collect = None
-
-    for collect in wrksp['collections']:
-        if collect['_id'] == ObjectId(body['collectionID']):
-            target_collect = collect
-    if target_collect is None:
-        return {'msg': 'No such image collection!',
-                'errorLog': None
-                }, 404
-
-    image_metas = target_collect['images']
-    if image_metas is []:
-        return {'msg': 'No images in the collection!',
-                'errorLog': None
-                }, 404
-    lst = []
+    # Labeling Task
+    ##################
+    label_lst = []
     img_id_lst = []
     index = 0
     # Image input
@@ -230,7 +179,7 @@ def label_all():
         if (not img["labeled"]) or (img["labeled"] and not img["manual"]):
             img_dict = {'imageID': index, 'type': img['labels'][0], 'object': img_init['interpretation']['object'],
                         'overlap': img_init['interpretation']['overlap']}
-            lst.append(img_dict)
+            label_lst.append(img_dict)
             img_id_lst.append(index)
         index += 1
         #### Only for testing
@@ -259,11 +208,11 @@ def label_all():
             rule_dict[rule['name']].append(cla_lst)
 
     try:
-        print(lst)
+        print(label_lst)
         print(rule_dict)
         print("label input success")
 
-        labels = label(lst, rule_dict)
+        labels = label(label_lst, rule_dict)
 
     except Exception as err:
         return {'msg': 'ERROR in Apply Rules (labeling)',
@@ -276,14 +225,29 @@ def label_all():
                 }, 500
 
     # Apply new labels in
-
     i = 0
     while i < len(labels):
-        target_collect['images'][img_id_lst[i]]['labels']['name'] = labels[i]
+        if labels[i] != "None":
+            target_collect['images'][img_id_lst[i]]['labels']['name'] = labels[i]
+            target_collect['images'][img_id_lst[i]]['labeled'] = 1
         # Later will apply coordinates
         i += 1
 
-    # Apply new collection
+    # Update statistics
+    # Reset sta
+    target_collect['statistics']['unlabeled'] = 0
+    target_collect['statistics']['manual'] = 0
+    target_collect['statistics']['autoLabeled'] = 0
+    for img in image_metas:
+        if img['labeled']:
+            if img['manual']:
+                target_collect['statistics']['manual'] += 1
+            else:
+                target_collect['statistics']['autoLabeled'] += 1
+        else:
+            target_collect['statistics']['unlabeled'] += 1
+
+    # Updating workspace
     target_collect_lst = wrksp['collections']
     i = 0
     flag = 0
@@ -310,6 +274,7 @@ def label_all():
                 }, 404
 
     return {'msg': "success", 'errorLog': None}, 200
+
 
 #
 # @app.route('/flaskadmin')

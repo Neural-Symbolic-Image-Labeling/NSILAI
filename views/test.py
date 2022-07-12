@@ -520,3 +520,125 @@ import base64
 #                            '6': {'idA': 10, 'idB': 13, 'area': 317.32206079829484}}}]
 # print(FOIL(input_list))
 
+##### Previous labeling API
+
+
+#
+# # Labeling
+# @app.route('/api/label', methods=['POST'])
+# def label_all():
+#     body = request.get_json()
+#     wrksp = mongo.db.workspaces.find_one({'_id': ObjectId(body['workspaceID'])})
+#     if wrksp is None:
+#         return {'msg': 'No such workspace!',
+#                 'errorLog': None
+#                 }, 404
+#     target_collect = None
+#
+#     for collect in wrksp['collections']:
+#         if collect['_id'] == ObjectId(body['collectionID']):
+#             target_collect = collect
+#     if target_collect is None:
+#         return {'msg': 'No such image collection!',
+#                 'errorLog': None
+#                 }, 404
+#
+#     image_metas = target_collect['images']
+#     if image_metas is []:
+#         return {'msg': 'No images in the collection!',
+#                 'errorLog': None
+#                 }, 404
+#     label_lst = []
+#     img_id_lst = []
+#     index = 0
+#     # Image input
+#     for img in image_metas:
+#         img_init = mongo.db.images.find_one({'_id': ObjectId(img['imageId'])})
+#         if img_init is None:
+#             return {'msg': 'No such image!',
+#                     'errorLog': None
+#                     }, 404
+#         if (not img["labeled"]) or (img["labeled"] and not img["manual"]):
+#             img_dict = {'imageID': index, 'type': img['labels'][0], 'object': img_init['interpretation']['object'],
+#                         'overlap': img_init['interpretation']['overlap']}
+#             label_lst.append(img_dict)
+#             img_id_lst.append(index)
+#         index += 1
+#         #### Only for testing
+#         # if index == 1:
+#         #     img_dict = {'imageID': index, 'type': 'non-life', 'object': img_init['interpretation']['object'],
+#         #                 'overlap': img_init['interpretation']['overlap']}
+#         # else:
+#         #     img_dict = {'imageID': index, 'type': 'life', 'object': img_init['interpretation']['object'],
+#         #                 'overlap': img_init['interpretation']['overlap']}
+#         # lst.append(img_dict)
+#         # index += 1
+#
+#     # Rule input
+#     rules = target_collect['rules']
+#     if rules is []:
+#         return {'msg': 'No rules in the collection!',
+#                 'errorLog': None
+#                 }, 404
+#     rule_dict = {}
+#     for rule in rules:
+#         rule_dict[rule['name']] = []
+#         for clause in rule['clauses']:
+#             cla_lst = []
+#             for lit in clause:
+#                 cla_lst.append(lit['literal'])
+#             rule_dict[rule['name']].append(cla_lst)
+#
+#     try:
+#         print(label_lst)
+#         print(rule_dict)
+#         print("label input success")
+#
+#         labels = label(label_lst, rule_dict)
+#
+#     except Exception as err:
+#         return {'msg': 'ERROR in Apply Rules (labeling)',
+#                 'errorLog': str(err)
+#                 }, 500
+#
+#     if len(img_id_lst) != len(labels):
+#         return {'msg': 'Label method return insufficient labels based on input images',
+#                 'errorLog': None
+#                 }, 500
+#
+#     # Apply new labels in
+#
+#     i = 0
+#     while i < len(labels):
+#         target_collect['images'][img_id_lst[i]]['labels']['name'] = labels[i]
+#         # Later will apply coordinates
+#         i += 1
+#
+#     # Apply new collection
+#     target_collect_lst = wrksp['collections']
+#     i = 0
+#     flag = 0
+#     while i < len(target_collect_lst):
+#         if target_collect_lst[i]['_id'] == target_collect['_id']:
+#             target_collect_lst[i] = target_collect
+#             flag = 1
+#         i += 1
+#     print("This is target collection list")
+#     print(target_collect_lst)
+#     if flag == 0:
+#         return {'msg': 'No such collection!',
+#                 'errorLog': None
+#                 }, 404
+#
+#     flt = {'_id': ObjectId(body['workspaceID'])}
+#     new_wrksp = {'$set': {'collections': target_collect_lst}}
+#
+#     try:
+#         mongo.db.workspaces.update_one(flt, new_wrksp)
+#     except Exception as err:
+#         return {'msg': 'Fail to Update!',
+#                 'errorLog': str(err)
+#                 }, 404
+#
+#     return {'msg': "success", 'errorLog': None}, 200
+
