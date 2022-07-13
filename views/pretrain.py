@@ -14,7 +14,7 @@ transforms = transforms.Compose([
 
 def pretrain_label(im,number):
     buf = six.BytesIO()  # 获取指针（地址）对象
-    buf.write(x)  # 指针对象写入数据
+    buf.write(im)  # 指针对象写入数据
     buf.seek(0)
     im = Image.open(buf).convert('RGB')
     print(im)
