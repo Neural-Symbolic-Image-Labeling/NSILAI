@@ -254,9 +254,9 @@ def threshold(target,clause,total_list):
                 a1=re.split(r'[(|,|)]',clause)
                 if a[0]=='num' and a[1]==a1[1]:
                     if image[0]==target:
-                        positive_list.append(int(a[2]))
+                        positive_list.append(float(a[2]))
                     else:
-                        negative_list.append(int(a[2]))
+                        negative_list.append(float(a[2]))
         result=True
         if max(positive_list)>maxi:
             maxi=max(positive_list)
@@ -277,9 +277,9 @@ def threshold(target,clause,total_list):
                 a1=re.split(r'[(|,|)]',clause)
                 if a[0]=='area' and a[1]==a1[1]:
                     if image[0]==target:
-                        positive_list.append(int(a[2]))
+                        positive_list.append(float(a[2]))
                     else:
-                        negative_list.append(int(a[2]))
+                        negative_list.append(float(a[2]))
         result=True
         if max(positive_list)>maxi:
             maxi=max(positive_list)

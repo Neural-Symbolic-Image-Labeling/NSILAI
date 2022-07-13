@@ -130,9 +130,9 @@ def labeling(total_list,rules):
                             if b[0]==a[0]:
                                 object1_in_image=object_in_image[object_number.index(b[1])]
                                 c=re.split(r'[<]',rule[position+1])
-                                mini=int(c[0])
-                                maxi=int(c[2])
-                                if object1_in_image==object1_in_rule and mini<=int(b[2])<=maxi:
+                                mini=float(c[0])
+                                maxi=float(c[2])
+                                if object1_in_image==object1_in_rule and mini<=float(b[2])<=maxi:
                                     satisfy_list[position]="True"
                                     break
                 if "False" not in satisfy_list:
