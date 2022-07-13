@@ -82,8 +82,6 @@ def pretrain_label(im,number):
     pic_area=im.size[0]*im.size[1]
     print(pic_area)
 
-
-
     def overlap(x1, y1, x2, y2, x3, y3, x4, y4):
         s1=[x1, y1, x2, y2]
         s2=[x3, y3, x4, y4]
@@ -389,8 +387,6 @@ def pretrain_label(im,number):
     y=[]
     y.append(data)
     print(y)
-    # y = json.dumps(y)
-    # print(y)
     return y
 
 
