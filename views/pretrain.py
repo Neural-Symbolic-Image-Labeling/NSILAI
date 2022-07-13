@@ -314,6 +314,7 @@ def pretrain_label(im,number):
                 total = total + 1
     print(data)
     y = []
+
     y.append(data)
     print(y)
     return y
