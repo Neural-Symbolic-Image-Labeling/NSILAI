@@ -6,14 +6,26 @@ def foil_gain(pre_p,pre_n,now_p,now_n):
         return -99                        #There are some cases that the numerator may be 0. Set to -99 for not affecting the normal comparision among the multiple gains
     gain=now_p*(math.log2(now_p/(now_n+now_p))-math.log2(pre_p/(pre_p+pre_n)))        #now_p:new positive, pre_n: previous negative
     return gain
+'''print(foil_gain(3,3,3,2))'''
 
+#This function can help change the input into the right format (two dimentional input, the number of first dimentional list is the number of images)
+'''possible_clause=get_possile_clause(total_list)'''
+'''def add_image(image_list):
+    total_list=[]
+    total_list.append(image_list)
+    return total_list'''
+#print(add_image(['people','has(person)']))
+    
 #This function is to get parameter(s), for example:only when you have "person" or "guitar", you can have overlap(person,guitar)
 def get_parameter_list(result):
     parameter_list=[]
     for clause in result:
         a=re.split(r'[(|,|)]',clause)
-        if a[0]!="overlap" and a[0]!="num":
+        if a[0]!="overlap" and a[0]!="num" and a[0]!='area':
             parameter_list.append(a[2])
+        '''for parameter_number,parameter in enumerate(a):
+            if (parameter_number!=0 and parameter_number!=len(a)-1):     #The format is ["has(x,person)"],want to get "person"
+                parameter_list.append(parameter)'''
     return parameter_list
 
 '''This function is to get positive and negative list according to the target(such as "guitarist") and see if the image classified as "guitarist" has the clause,
@@ -57,7 +69,7 @@ def get_new_total_list(result_list,total_list):
     for i in range(len(del_number)):
         del new_total[del_number[len(del_number)-1-i]]               #the position is in positive sequence, first delete the back one
     return new_total   #two dimentional list, get the result which not has the positive that satisfy right side
-
+    
 def get_new_total_list1(result_list,total_list):        #use for outer loop
     del_number_hd=[]
     new_total=copy.deepcopy(total_list)           #use deepcopy for not changing the total_list
@@ -92,7 +104,7 @@ def get_possible_clause1(counting,total_list,result_list):
                 if i!=0 and (clause not in result_list[len(result_list)-1]) and (clause not in clause_total):        # The first position of each image is classification, so clauses start from the second position
                     clause_total.append(clause)
     return clause_total
-
+    
 def rank_the_result(result_list):
     result=sorted(result_list,key=lambda i:len(i))
     return result
@@ -119,15 +131,15 @@ def get_total_list(total_list1):
 
 def get_int(elem):
     return int(elem)
-
-def get_result_list(result_list):
+    
+def get_result_list(target,result_list,total_list):
     new_result_list=[]
     number=[]
     character=[]
     for image in result_list:
         for clauses in image:
             a=re.split(r'[(|,|)]',clauses)
-            if a[0]!="overlap" and a[0]!="num":
+            if a[0]!="overlap" and a[0]!="num" and a[0]!="area":
                 if a[2] not in number:
                     number.append(a[2])
             elif a[0]=="overlap":
@@ -140,15 +152,17 @@ def get_result_list(result_list):
                     number.append(a[1])
     number.sort(key=get_int)
     for i in range(len(number)):
-        if i<23:
+        if i<13:
             character.append(chr(i+65))
-        else:
+        elif 13<=i<23:
             character.append(chr(i+65+1))
+        else:
+            character.append(chr(i+65+2))
     for image in result_list:
         result=[]
         for clauses in image:
             a=re.split(r'[(|,|)]',clauses)
-            if a[0]!="overlap" and a[0]!='num':
+            if a[0]!="overlap" and a[0]!='num'and a[0]!='area':
                 position=number.index(a[2])
                 a[2]=character[position]
                 clause=a[0]+"("+a[1]+","+a[2]+")"+a[3]
@@ -163,78 +177,131 @@ def get_result_list(result_list):
             else:
                 position=number.index(a[1])
                 a[1]=character[position]
-                clause=a[0]+"("+a[1]+","+a[2]+")"+a[3]
+                clause=a[0]+"("+a[1]+","+"N"+")"+a[3]
                 result.append(clause)
+                mini,maxi=threshold(target,clause,total_list)
+                threshold_clause=str(mini)+"<N<"+str(maxi)
+                result.append(threshold_clause)
         new_result_list.append(result)
     return new_result_list
-
+    
 def get_total_list1(input_list):
     total_object=[]
     total_list=[]
-    image_number=1
-    for dictionary in input_list:
-        for image_num in range(len(dictionary)):
-            for objects_num in range(len(dictionary[image_num]['object'])):
-                name=dictionary[image_num]['object'][str(objects_num)]['name']
-                if name not in total_object:
-                    total_object.append(name)
-    for dictionary in input_list:
-        for image_num in range(len(dictionary)):
-            image_list=[]
-            string=dictionary[image_num]['type']+"(image"+str(image_number)+")"
-            image_list.append(string)
-            position_list=[]
-            for objects_num in range(len(dictionary[image_num]['object'])):
-                name=dictionary[image_num]['object'][str(objects_num)]['name']
-                position=total_object.index(name)
-                if position not in position_list:
-                    position_list.append(position)
-            object_numbers=[0 for i in range(len(position_list))]
-            for objects_num in range(len(dictionary[image_num]['object'])):
-                name=dictionary[image_num]['object'][str(objects_num)]['name']
-                position=total_object.index(name)
-                object_numbers[position_list.index(position)]+=1
-            for index,objects in enumerate(position_list):
-                has=total_object[objects]+"(image"+str(image_number)+","+str(objects)+")"
-                num="num"+"("+str(objects)+","+str(object_numbers[index])+")"
-                image_list.append(has)
-                image_list.append(num)
-            for objects_num in range(len(dictionary[image_num]['overlap'])):
-                object1_name=dictionary[image_num]['object'][str(dictionary[image_num]['overlap'][str(objects_num)]["idA"])]['name']
-                object2_name=dictionary[image_num]['object'][str(dictionary[image_num]['overlap'][str(objects_num)]["idB"])]['name']
-                position1=total_object.index(object1_name)
-                position2=total_object.index(object2_name)
-                if position1<position2:
-                    overlap="overlap("+str(position1)+","+str(position2)+")"
-                else:
-                    overlap="overlap("+str(position2)+","+str(position1)+")"
-                if overlap not in image_list:
-                    image_list.append(overlap)
-            total_list.append(image_list)
-            image_number+=1
+    for image_num in range(len(input_list)):
+        for objects_num in range(len(input_list[image_num]['object_detect']['object'])):
+            name=input_list[image_num]['object_detect']['object'][str(objects_num)]['name']
+            if name not in total_object:
+                total_object.append(name)
+        for objects_num in range(len(input_list[image_num]['panoptic_segmentation'])):
+            name=input_list[image_num]['panoptic_segmentation'][str(objects_num)]['name']
+            if name not in total_object:
+                total_object.append(name)
+    for image_num in range(len(input_list)):
+        image_list=[]
+        string=input_list[image_num]['type']+"(image"+str(input_list[image_num]['imageId'])+")"
+        image_list.append(string)
+        position_list=[]
+        position_list1=[]
+        for objects_num in range(len(input_list[image_num]['object_detect']['object'])):
+            name=input_list[image_num]['object_detect']['object'][str(objects_num)]['name']
+            position=total_object.index(name)
+            if position not in position_list:
+                position_list.append(position)
+        for objects_num in range(len(input_list[image_num]['panoptic_segmentation'])):
+            name=input_list[image_num]['panoptic_segmentation'][str(objects_num)]['name']
+            position=total_object.index(name)
+            if position not in position_list1:
+                position_list1.append(position)
+        object_numbers=[0 for i in range(len(position_list))]
+        for objects_num in range(len(input_list[image_num]['object_detect']['object'])):
+            name=input_list[image_num]['object_detect']['object'][str(objects_num)]['name']
+            position=total_object.index(name)
+            object_numbers[position_list.index(position)]+=1
+        for index,objects in enumerate(position_list):
+            has=total_object[objects]+"(image"+str(input_list[image_num]['imageId'])+","+str(objects)+")"
+            num="num"+"("+str(objects)+","+str(object_numbers[index])+")"
+            image_list.append(has)
+            image_list.append(num)
+        for index,objects in enumerate(position_list1):
+            has=total_object[objects]+"(image"+str(input_list[image_num]['imageId'])+","+str(objects)+")"
+            area="area"+"("+str(objects)+","+str(input_list[image_num]['panoptic_segmentation'][str(index)]['area'])+")"
+            image_list.append(has)
+            image_list.append(area)
+        for objects_num in range(len(input_list[image_num]['object_detect']['overlap'])):
+            object1_name=input_list[image_num]['object_detect']['object'][str(input_list[image_num]['object_detect']['overlap'][str(objects_num)]["idA"])]['name']
+            object2_name=input_list[image_num]['object_detect']['object'][str(input_list[image_num]['object_detect']['overlap'][str(objects_num)]["idB"])]['name']
+            position1=total_object.index(object1_name)
+            position2=total_object.index(object2_name)
+            if position1<position2:
+                overlap="overlap("+str(position1)+","+str(position2)+")"
+            else:
+                overlap="overlap("+str(position2)+","+str(position1)+")"
+            if overlap not in image_list:
+                image_list.append(overlap)
+        total_list.append(image_list)
     return total_list
 
 def threshold(target,clause,total_list):
     positive_list=[]
     negative_list=[]
-    for image in total_list:
-        for clauses in image:
-            a=re.split(r'[(|,|)]',clauses)
-            a1=re.split(r'[(|,|)]',clause)
-            if a[0]=='num' and a[1]==a1[1]:
-                if image[0]==target:
-                    positive_list.append(int(a[2]))
-                else:
-                    negative_list.append(int(a[2]))
-    result=True
-    for negative_num in negative_list:
-        if negative_num<max(positive_list) and negative_num>min(positive_list):
-            result=False
+    a1=re.split(r'[(|,|)]',clause)
+    mini=maxi=0
+    if a1[0]=='num':
+        for image in total_list:
+            for clauses in image:
+                a=re.split(r'[(|,|)]',clauses)
+                a1=re.split(r'[(|,|)]',clause)
+                if a[0]=='num' and a[1]==a1[1]:
+                    if image[0]==target:
+                        positive_list.append(int(a[2]))
+                    else:
+                        negative_list.append(int(a[2]))
+        result=True
+        if max(positive_list)>maxi:
+            maxi=max(positive_list)
+        if min(positive_list)<mini:
+            mini=min(positive_list)
+        for negative_num in negative_list:
+            if negative_num<maxi and negative_num>mini:
+                result=False
+                break
+        if result==False:
+            return False
+        else:
+            return mini,maxi
+    elif a1[0]=='area':
+        for image in total_list:
+            for clauses in image:
+                a=re.split(r'[(|,|)]',clauses)
+                a1=re.split(r'[(|,|)]',clause)
+                if a[0]=='area' and a[1]==a1[1]:
+                    if image[0]==target:
+                        positive_list.append(int(a[2]))
+                    else:
+                        negative_list.append(int(a[2]))
+        result=True
+        if max(positive_list)>maxi:
+            maxi=max(positive_list)
+        if min(positive_list)<mini:
+            mini=min(positive_list)
+        for negative_num in negative_list:
+            if negative_num<maxi and negative_num>mini:
+                result=False
+                break
+        if result==False:
+            return False
+        else:
+            return mini,maxi
+
+def still_has(possible_clause,foil_gain_list):
+    has=False
+    for clause_num,clauses in enumerate(possible_clause):
+        a=re.split(r'[(|,|)]',clauses)
+        if a[1]=='X' and foil_gain_list[clause_num]!=-99:
+            has=True
             break
-    if result==False:
-        return False
-    else:
-        return min(positive_list),max(positive_list)
+    return has
 
 def foil(target,total_list):
 #target should be a string, such as "guitarist"
@@ -260,7 +327,7 @@ def foil(target,total_list):
                         if clause==new_clause:
                             for positive_image_number in positive_list:
                                 if image_number==positive_image_number:
-                                    now_p+=1
+                                    now_p+=1  
                             for negative_image_number in negative_list:
                                 if image_number==negative_image_number:
                                     now_n+=1
@@ -269,11 +336,13 @@ def foil(target,total_list):
             parameter_list=get_parameter_list(result)
             while correct_clause == False:
                 for clause_number,clause_gain in enumerate(foil_gain_list):
+                    if max(foil_gain_list)==-99:
+                        return None
                     if clause_gain==max(foil_gain_list):
                         a=re.split(r'[(|,|)]',possible_clause[clause_number])
                         if a[0]=="overlap":
-                            if (a[1] in parameter_list) and (a[2] in parameter_list):
-                                new_result=copy.deepcopy(result)    #The following is to first add it to result, if it is a special case
+                            if (a[1] in parameter_list) and (a[2] in parameter_list) and still_has(possible_clause,foil_gain_list)==False:
+                                new_result=copy.deepcopy(result)    #The following is to first add it to result, if it is a special case 
                                 new_result.append(possible_clause[clause_number])       # such that only one positive has the clause and no negative has it, it may has the best gain.
                                 result_list.append(new_result)
                                 correct_clause=True
@@ -281,8 +350,8 @@ def foil(target,total_list):
                             else:
                                 foil_gain_list[clause_number]=-99
                                 break
-                        elif a[0]=="num":
-                            if a[1] in parameter_list and threshold(target,possible_clause[clause_number],total_list)!=False:
+                        elif a[0]=="num" or a[0]=='area':
+                            if a[1] in parameter_list and threshold(target,possible_clause[clause_number],total_list)!=False and still_has(possible_clause,foil_gain_list)==False:
                                 new_result=copy.deepcopy(result)
                                 new_result.append(possible_clause[clause_number])
                                 result_list.append(new_result)
@@ -290,7 +359,7 @@ def foil(target,total_list):
                                 break
                             else:
                                 foil_gain_list[clause_number]=-99
-                                break
+                                break 
                         else:
                             new_result=copy.deepcopy(result)
                             new_result.append(possible_clause[clause_number])
@@ -308,8 +377,10 @@ def foil(target,total_list):
     return result_list
 
 def plural(word):
-    if word=="person":
-        return "people"
+    special_list=['person','grass']
+    plural_list=['people','grass']
+    if word in special_list:
+        return plural_list[special_list.index(word)]
     elif word.endswith('y'):
         return word[:-1]+"ies"
     elif word[-1] in 'sx' or word[-2:] in ['sh','ch']:
@@ -318,7 +389,7 @@ def plural(word):
         return word[:-2]+'en'
     else:
         return word+'s'
-
+    
 def NL(result_list,target,total_list):
     result=[]
     for results in result_list:
@@ -328,7 +399,7 @@ def NL(result_list,target,total_list):
         for i,clauses in enumerate(results):
             n=''
             a=re.split(r'[(|,|)]',clauses)
-            if a[0]!='overlap' and a[0]!="num":
+            if a[0]!='overlap' and a[0]!="num" and a[0]!='area':
                 n+='This image has '+a[0]
                 objects.append(a[0])
                 characters.append(a[2])
@@ -336,13 +407,20 @@ def NL(result_list,target,total_list):
                 index1=characters.index(a[1])
                 index2=characters.index(a[2])
                 n+=objects[index1]+' is overlapping with '+objects[index2]
-            else:
+            elif a[0]=='num':
                 index=characters.index(a[1])
                 object_name=objects[index]
                 if int(a[2])>1:
                     object_name= plural(object_name)
                 max,min=threshold(target,clauses,total_list)
                 n+='The number of '+object_name+" is greater than "+min+", less than "+max
+            elif a[0]=='area':
+                index=characters.index(a[1])
+                object_name=objects[index]
+                if int(a[2])>1:
+                    object_name= plural(object_name)
+                max,min=threshold(target,clauses,total_list)
+                n+='The area of '+object_name+" is greater than "+min+", less than "+max
             result_list.append(n)
         result.append(result_list)
     return result
@@ -357,13 +435,18 @@ def FOIL(input_list):
     for images in total_list:
         if images[0] not in target_list:
             target_list.append(images[0])
-    #target_list.remove("residential(X)")
     for target in target_list:
         result_list=foil(target,total_list)
-        math_format=get_result_list(result_list)
-        natural_language=NL(math_format,target,result_list)
-        dict_math[target]=math_format
-        dict_nl[target]=natural_language
+        if result_list==None:
+            dict_math[target]=[['none']]
+            dict_nl[target]=[['none']]
+        else:
+            math_format=get_result_list(target,result_list,total_list)
+            natural_language=NL(math_format,target,result_list)
+            dict_math[target]=math_format
+            dict_nl[target]=natural_language
+    return dict_math,dict_nl
     #end=time.time()
     #print(end-start)
-    return dict_math,dict_nl
+
+
