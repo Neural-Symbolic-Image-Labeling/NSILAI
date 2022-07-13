@@ -127,7 +127,8 @@ def train_rule():
         #     index += 1
         #### Only for testing
         if index == 1:
-            img_dict = {'imageId': index, 'type': 'non-life', 'object_detect': img_init['interpretation']['object_detect'],
+            img_dict = {'imageId': index, 'type': 'non-life',
+                        'object_detect': img_init['interpretation']['object_detect'],
                         'panoptic_segmentation': img_init['interpretation']['panoptic_segmentation']}
         else:
             img_dict = {'imageId': index, 'type': 'life', 'object_detect': img_init['interpretation']['object_detect'],
@@ -151,16 +152,17 @@ def train_rule():
     # Loop over add into clauses and overwrite rules
     target_collect['rules'].clear()
     for key in rule:
-        new_rule = {'name': key, 'clauses': []}
+        new_rule = {'name': key,
+                    'clauses': []}
         #### Modified version for more predicate in single clauses
         i = 0
         while i < len(rule[key]):
-            new_cl = []
+            new_cl = {'literals': []}
             j = 0
             while j < len(rule[key][i]):
                 new_lit = {'literal': rule[key][i][j],
-                          'naturalValue': natural_rule[key][i][j]}
-                new_cl.append(new_lit)
+                           'naturalValue': natural_rule[key][i][j]}
+                new_cl['literals'].append(new_lit)
                 j += 1
             new_rule['clauses'].append(new_cl)
             i += 1
@@ -208,7 +210,7 @@ def train_rule():
         rule_dict[rule['name']] = []
         for clause in rule['clauses']:
             cla_lst = []
-            for lit in clause:
+            for lit in clause['literals']:
                 cla_lst.append(lit['literal'])
             rule_dict[rule['name']].append(cla_lst)
 
@@ -287,7 +289,6 @@ def train_rule():
                 }, 404
 
     return {'msg': "success", 'errorLog': None}, 200
-
 
 #
 # @app.route('/flaskadmin')
