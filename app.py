@@ -66,9 +66,12 @@ def pretrain(imgid):
                 }, 500
 
     # data = json.load(data)
-    interpretation = {k: data[0][k] for k in ['object', 'overlap'] if k in data[0]}
+    interpretation = {k: data[0][k] for k in ['object_detect', 'panoptic_segmentation'] if k in data[0]}
+    # interpretation = {k: data[0][k] for k in ['object', 'overlap'] if k in data[0]}
+
     # print(interpretation)
     new_int = {'$set': {'interpretation': interpretation}}
+    # new_int = {'$set': {'interpretation': {'object_detect': interpretation, 'panoptic_segmentation': {}}}}
     try:
         mongo.db.images.update_one(target, new_int)
     except Exception as err:
@@ -118,24 +121,25 @@ def train_rule():
                     'errorLog': None
                     }, 404
         # if not len(img['labels']) == 0:
-        #     img_dict = {'imageID': index, 'type': img['labels'][0], 'object': img_init['interpretation']['object'],
-        #                 'overlap': img_init['interpretation']['overlap']}
+        #     img_dict = {'imageId': index, 'type': img['labels'][0], 'object_detect': img_init['interpretation']['object_detect'],
+        #                 'panoptic_segmentation': img_init['interpretation']['panoptic_segmentation']}
         #     lst.append(img_dict)
         #     index += 1
         #### Only for testing
         if index == 1:
-            img_dict = {'imageID': index, 'type': 'non-life', 'object': img_init['interpretation']['object'],
-                        'overlap': img_init['interpretation']['overlap']}
+            img_dict = {'imageId': index, 'type': 'non-life', 'object_detect': img_init['interpretation']['object_detect'],
+                        'panoptic_segmentation': img_init['interpretation']['panoptic_segmentation']}
         else:
-            img_dict = {'imageID': index, 'type': 'life', 'object': img_init['interpretation']['object'],
-                        'overlap': img_init['interpretation']['overlap']}
+            img_dict = {'imageId': index, 'type': 'life', 'object_detect': img_init['interpretation']['object_detect'],
+                        'panoptic_segmentation': img_init['interpretation']['panoptic_segmentation']}
         lst.append(img_dict)
         index += 1
     try:
         print(lst)
         print("FOIL input success")
-        rule = FOIL(lst)[0]
-        natural_rule = FOIL(lst)[1]
+        result = FOIL(lst)
+        rule = result[0]
+        natural_rule = result[1]
         print(rule)
         print(natural_rule)
         print("FOIL success")
@@ -157,6 +161,7 @@ def train_rule():
                 new_lit = {'literal': rule[key][i][j],
                           'naturalValue': natural_rule[key][i][j]}
                 new_cl.append(new_lit)
+                j += 1
             new_rule['clauses'].append(new_cl)
             i += 1
         target_collect['rules'].append(new_rule)
@@ -177,17 +182,17 @@ def train_rule():
                     'errorLog': None
                     }, 404
         if (not img["labeled"]) or (img["labeled"] and not img["manual"]):
-            img_dict = {'imageID': index, 'type': img['labels'][0], 'object': img_init['interpretation']['object'],
-                        'overlap': img_init['interpretation']['overlap']}
+            img_dict = {'imageId': index, 'object_detect': img_init['interpretation']['object_detect'],
+                        'panoptic_segmentation': img_init['interpretation']['panoptic_segmentation']}
             label_lst.append(img_dict)
             img_id_lst.append(index)
         index += 1
         #### Only for testing
         # if index == 1:
-        #     img_dict = {'imageID': index, 'type': 'non-life', 'object': img_init['interpretation']['object'],
+        #     img_dict = {'imageId': index, 'type': 'non-life', 'object': img_init['interpretation']['object'],
         #                 'overlap': img_init['interpretation']['overlap']}
         # else:
-        #     img_dict = {'imageID': index, 'type': 'life', 'object': img_init['interpretation']['object'],
+        #     img_dict = {'imageId': index, 'type': 'life', 'object': img_init['interpretation']['object'],
         #                 'overlap': img_init['interpretation']['overlap']}
         # lst.append(img_dict)
         # index += 1
@@ -228,11 +233,19 @@ def train_rule():
     i = 0
     while i < len(labels):
         if labels[i] != "None":
-            target_collect['images'][img_id_lst[i]]['labels']['name'] = labels[i]
-            target_collect['images'][img_id_lst[i]]['labeled'] = 1
+            if not target_collect['images'][img_id_lst[i]]['labels']:
+                label_dict = {
+                    'name': labels[i],
+                    'mark': {}
+                }
+                target_collect['images'][img_id_lst[i]]['labels'].append(label_dict)
+            else:
+                # Implement later for other tasks
+                pass
+            target_collect['images'][img_id_lst[i]]['labeled'] = True
         # Later will apply coordinates
         i += 1
-
+    print("Lable Success!")
     # Update statistics
     # Reset sta
     target_collect['statistics']['unlabeled'] = 0
