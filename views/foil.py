@@ -179,7 +179,7 @@ def get_result_list(target,result_list,total_list):
                 a[1]=character[position]
                 clause=a[0]+"("+a[1]+","+"N"+")"+a[3]
                 result.append(clause)
-                mini,maxi=threshold(target,clause,total_list)
+                mini,maxi=threshold(target,clauses,total_list)
                 threshold_clause=str(mini)+"<N<"+str(maxi)
                 result.append(threshold_clause)
         new_result_list.append(result)
@@ -399,7 +399,7 @@ def NL(result_list,target,total_list):
         for i,clauses in enumerate(results):
             n=''
             a=re.split(r'[(|,|)]',clauses)
-            if a[0]!='overlap' and a[0]!="num" and a[0]!='area':
+            if a[0]!='overlap' and a[0]!="num" and a[0]!='area' and len(a)==4:
                 n+='This image has '+a[0]
                 objects.append(a[0])
                 characters.append(a[2])
@@ -410,16 +410,18 @@ def NL(result_list,target,total_list):
             elif a[0]=='num':
                 index=characters.index(a[1])
                 object_name=objects[index]
-                if int(a[2])>1:
+                b=re.split(r'[<]',results[i+1])
+                if int(b[0])>1:
                     object_name= plural(object_name)
-                max,min=threshold(target,clauses,total_list)
+                min=b[0]
+                max=b[2]
                 n+='The number of '+object_name+" is greater than "+min+", less than "+max
             elif a[0]=='area':
                 index=characters.index(a[1])
                 object_name=objects[index]
-                if int(a[2])>1:
-                    object_name= plural(object_name)
-                max,min=threshold(target,clauses,total_list)
+                b=re.split(r'[<]',results[i+1])
+                min=b[0]
+                max=b[2]
                 n+='The area of '+object_name+" is greater than "+min+", less than "+max
             result_list.append(n)
         result.append(result_list)
