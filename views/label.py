@@ -135,9 +135,6 @@ def labeling(total_list,rules):
                                 if object1_in_image==object1_in_rule and mini<=int(b[2])<=maxi:
                                     satisfy_list[position]="True"
                                     break
-                    else:
-                        satisfy_list[position]="True"
-                        break
                 if "False" not in satisfy_list:
                     satisfy[rule_num]="True"
             if "True" in satisfy:
