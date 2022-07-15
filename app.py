@@ -232,21 +232,46 @@ def train_rule():
                 }, 500
 
     # Apply new labels in
-    i = 0
-    while i < len(labels):
-        if labels[i] != "None":
-            if not target_collect['images'][img_id_lst[i]]['labels']:
-                label_dict = {
-                    'name': labels[i],
-                    'mark': {}
-                }
-                target_collect['images'][img_id_lst[i]]['labels'].append(label_dict)
-            else:
-                # Implement later for other tasks
-                pass
-            target_collect['images'][img_id_lst[i]]['labeled'] = True
+    # i = 0
+    # while i < len(labels):
+    #     if labels[i] != "None":
+            # if not target_collect['images'][img_id_lst[i]]['labels']:
+            #     label_dict = {
+            #         'name': labels[i],
+            #         'mark': {}
+            #     }
+            #     target_collect['images'][img_id_lst[i]]['labels'].append(label_dict)
+            # else:
+            #     # Implement later for other tasks
+            #     target_collect['images'][img_id_lst[i]]['labels'][0]['name'] = labels[i]
+
+            # target_collect['images'][img_id_lst[i]]['labeled'] = True
         # Later will apply coordinates
+        # i += 1
+    # Compatible with conflict labels
+    i = 0
+    while i < len(labels[0]):
+        lst = []
+        if [labels[0][i]] != 'None':
+            lst = [labels[0][i]]
+        for lab_lst in labels:
+            if lab_lst[i] not in lst and lab_lst != 'None':
+                lst.append(lab_lst[i])
+
+        if not target_collect['images'][img_id_lst[i]]['labels']:
+            label_dict = {
+                'name': lst,
+                'mark': {}
+            }
+            target_collect['images'][img_id_lst[i]]['labels'].append(label_dict)
+        else:
+            # Implement later for other tasks
+            target_collect['images'][img_id_lst[i]]['labels'][0]['name'] = lst
+
+        if not lst:
+            target_collect['images'][img_id_lst[i]]['labeled'] = True
         i += 1
+
     print("Lable Success!")
     # Update statistics
     # Reset sta
