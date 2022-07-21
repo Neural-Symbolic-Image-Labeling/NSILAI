@@ -642,3 +642,26 @@ import base64
 #
 #     return {'msg': "success", 'errorLog': None}, 200
 
+# Previous version of conflict feature in autolabel
+# i = 0
+# while i < len(labels[0]):
+#     lst = []
+#     if [labels[0][i]] != 'None':
+#         lst = [labels[0][i]]
+#     for lab_lst in labels:
+#         if lab_lst[i] not in lst and lab_lst != 'None':
+#             lst.append(lab_lst[i])
+#
+#     if not target_collect['images'][img_id_lst[i]]['labels']:
+#         label_dict = {
+#             'name': lst,
+#             'mark': {}
+#         }
+#         target_collect['images'][img_id_lst[i]]['labels'].append(label_dict)
+#     else:
+#         # Implement later for other tasks
+#         target_collect['images'][img_id_lst[i]]['labels'][0]['name'] = lst
+#
+#     if not lst:
+#         target_collect['images'][img_id_lst[i]]['labeled'] = True
+#     i += 1
