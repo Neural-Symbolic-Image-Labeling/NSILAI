@@ -296,6 +296,7 @@ def train_rule():
             else:
                 # Implement later for other tasks
                 target_collect['images'][img_id_lst[i]]['labels'][0]['name'] = labels[i]
+            target_collect['images'][img_id_lst[i]]['labeled'] = True
         i += 1
 
     ###########################
