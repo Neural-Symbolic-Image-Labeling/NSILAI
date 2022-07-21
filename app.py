@@ -111,65 +111,95 @@ def train_rule():
         return {'msg': 'No images in the collection!',
                 'errorLog': None
                 }, 404
-    lst = []
-    index = 1
-    # Add condition for no label
-    for img in image_metas:
-        img_init = mongo.db.images.find_one({'_id': ObjectId(img['imageId'])})
-        if img_init is None:
-            return {'msg': 'No such image!',
-                    'errorLog': None
-                    }, 404
-        # if not len(img['labels']) == 0:
-        #     img_dict = {'imageId': index, 'type': img['labels'][0], 'object_detect': img_init['interpretation']['object_detect'],
-        #                 'panoptic_segmentation': img_init['interpretation']['panoptic_segmentation']}
-        #     lst.append(img_dict)
-        #     index += 1
-        #### Only for testing
-        if index == 1:
-            img_dict = {'imageId': index, 'type': 'non-life',
-                        'object_detect': img_init['interpretation']['object_detect'],
-                        'panoptic_segmentation': img_init['interpretation']['panoptic_segmentation']}
-        else:
-            img_dict = {'imageId': index, 'type': 'life', 'object_detect': img_init['interpretation']['object_detect'],
-                        'panoptic_segmentation': img_init['interpretation']['panoptic_segmentation']}
-        lst.append(img_dict)
-        index += 1
-    try:
-        print(lst)
-        print("FOIL input success")
-        result = FOIL(lst)
-        rule = result[0]
-        natural_rule = result[1]
-        print(rule)
-        print(natural_rule)
-        print("FOIL success")
-    except Exception as err:
-        return {'msg': 'ERROR in FOIL',
-                'errorLog': str(err)
-                }, 500
 
-    # Loop over add into clauses and overwrite rules
-    target_collect['rules'].clear()
-    for key in rule:
-        new_rule = {'name': key,
-                    'clauses': []}
-        #### Modified version for more predicate in single clauses
-        i = 0
-        while i < len(rule[key]):
-            new_cl = {'literals': []}
-            j = 0
-            while j < len(rule[key][i]):
-                new_lit = {'literal': rule[key][i][j],
-                           'naturalValue': natural_rule[key][i][j]}
-                new_cl['literals'].append(new_lit)
-                j += 1
-            new_rule['clauses'].append(new_cl)
-            i += 1
-        target_collect['rules'].append(new_rule)
+    if body['task'] == 'auto':
+        lst = []
+        index = 1
+        for img in image_metas:
+            img_init = mongo.db.images.find_one({'_id': ObjectId(img['imageId'])})
+            if img_init is None:
+                return {'msg': 'No such image!',
+                        'errorLog': None
+                        }, 404
+            # if not len(img['labels']) == 0:
+            #     img_dict = {'imageId': index, 'type': img['labels'][0], 'object_detect': img_init['interpretation']['object_detect'],
+            #                 'panoptic_segmentation': img_init['interpretation']['panoptic_segmentation']}
+            #     lst.append(img_dict)
+            #     index += 1
+            #### Only for testing
+            if index == 1:
+                img_dict = {'imageId': index, 'type': 'non-life',
+                            'object_detect': img_init['interpretation']['object_detect'],
+                            'panoptic_segmentation': img_init['interpretation']['panoptic_segmentation']}
+            else:
+                img_dict = {'imageId': index, 'type': 'life', 'object_detect': img_init['interpretation']['object_detect'],
+                            'panoptic_segmentation': img_init['interpretation']['panoptic_segmentation']}
+            lst.append(img_dict)
+            index += 1
 
-    print("This is target_collection[rules]")
-    print(target_collect['rules'])
+        # Modified Rules input
+        md_r_dict = {}
+        if target_collect['rules']:
+            for rule in target_collect['rules']:
+                md_r_dict[rule['name']] = []
+                for clause in rule['clauses']:
+                    cl = []
+                    m_cl = []
+                    for literal in clause['literals']:
+                        cl.append(literal['literal'])
+                        if literal['locked']:
+                            if literal['modified']:
+                                m_cl.append(literal['modifiedValue'])
+                            else:
+                                m_cl.append(literal['literal'])
+                        elif literal['deleted']:
+                            continue
+                        else:
+                            m_cl.append(literal['literal'])
+                    md_r_dict[rule['name']].append((cl, m_cl))
+
+        try:
+            print(lst)
+            print("FOIL input success")
+            # Use this for later modification
+            # result = FOIL(lst, md_r_dict)
+            result = FOIL(lst)
+
+            rule = result[0]
+            natural_rule = result[1]
+            print(rule)
+            print(natural_rule)
+            print("FOIL success")
+        except Exception as err:
+            return {'msg': 'ERROR in FOIL',
+                    'errorLog': str(err)
+                    }, 500
+
+        # Loop over add into clauses and overwrite rules
+        target_collect['rules'].clear()
+        for key in rule:
+            new_rule = {'name': key,
+                        'clauses': []}
+            # Modified version for more predicate in single clauses
+            i = 0
+            while i < len(rule[key]):
+                new_cl = {'literals': []}
+                j = 0
+                while j < len(rule[key][i]):
+                    new_lit = {'literal': rule[key][i][j],
+                               'naturalValue': natural_rule[key][i][j],
+                               'modified': 0,
+                               'modifiedValue': None,
+                               'locked': 0,
+                               'deleted': 0}
+                    new_cl['literals'].append(new_lit)
+                    j += 1
+                new_rule['clauses'].append(new_cl)
+                i += 1
+            target_collect['rules'].append(new_rule)
+
+        print("This is target_collection[rules]")
+        print(target_collect['rules'])
 
     # Labeling Task
     ##################
@@ -189,7 +219,7 @@ def train_rule():
             label_lst.append(img_dict)
             img_id_lst.append(index)
         index += 1
-        #### Only for testing
+        # Only for testing
         # if index == 1:
         #     img_dict = {'imageId': index, 'type': 'non-life', 'object': img_init['interpretation']['object'],
         #                 'overlap': img_init['interpretation']['overlap']}
@@ -211,7 +241,10 @@ def train_rule():
         for clause in rule['clauses']:
             cla_lst = []
             for lit in clause['literals']:
-                cla_lst.append(lit['literal'])
+                if lit['modified'] and body['task'] == 'trail':
+                    cla_lst.append(lit['modifiedValue'])
+                else:
+                    cla_lst.append(lit['literal'])
             rule_dict[rule['name']].append(cla_lst)
 
     try:
