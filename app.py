@@ -138,13 +138,16 @@ def train_rule():
             index += 1
 
         # Modified Rules input
-        md_r_dict = {}
+        lk_r_dict = {}
+        dl_r_dict = {}
         if target_collect['rules']:
             for rule in target_collect['rules']:
-                md_r_dict[rule['name']] = []
+                lk_r_dict[rule['name']] = []
+                dl_r_dict[rule['name']] = []
                 for clause in rule['clauses']:
                     cl = []
                     m_cl = []
+                    d_cl = []
                     for literal in clause['literals']:
                         cl.append(literal['literal'])
                         if literal['locked']:
@@ -153,16 +156,14 @@ def train_rule():
                             else:
                                 m_cl.append(literal['literal'])
                         elif literal['deleted']:
-                            continue
-                        else:
-                            m_cl.append(literal['literal'])
-                    md_r_dict[rule['name']].append((cl, m_cl))
-
+                            d_cl.append(literal['literal'])
+                    lk_r_dict[rule['name']].append([cl, m_cl])
+                    dl_r_dict[rule['name']].append([cl, d_cl])
         try:
             print(lst)
             print("FOIL input success")
             # Use this for later modification
-            # result = FOIL(lst, md_r_dict)
+            # result = FOIL(lst, lk_r_dict, dl_r_dict)
             result = FOIL(lst)
 
             rule = result[0]
