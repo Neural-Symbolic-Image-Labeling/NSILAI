@@ -84,6 +84,7 @@ def labeling(total_list,rules):
     for possible_label in rules.keys():
         possible_labels.append(possible_label)
     for image in total_list:
+        label_list=[]
         find=False
         for possible_label in possible_labels:
             rule_list=rules[possible_label]
@@ -109,7 +110,7 @@ def labeling(total_list,rules):
                         object2_in_rule=object_in_rule[object_character.index(a[2])]
                         for predicate in image:
                             b=re.split(r'[(|,|)]',predicate)
-                            if b[0]!='overlap' and b[0]!='num':
+                            if b[0]!='overlap' and b[0]!='num' and b[0]!='area':
                                 object_in_image.append(b[0])
                                 object_number.append(b[2])
                             if b[0]==a[0]:
@@ -130,19 +131,25 @@ def labeling(total_list,rules):
                             if b[0]==a[0]:
                                 object1_in_image=object_in_image[object_number.index(b[1])]
                                 c=re.split(r'[<]',rule[position+1])
-                                mini=float(c[0])
-                                maxi=float(c[2])
-                                if object1_in_image==object1_in_rule and mini<=float(b[2])<=maxi:
-                                    satisfy_list[position]="True"
-                                    break
+                                if len(c)!=1:
+                                    maxi=float(c[1])
+                                    if object1_in_image==object1_in_rule and float(b[2])<=maxi:
+                                        satisfy_list[position]="True"
+                                        break
+                                else:
+                                    c=re.split(r'[>]',rule[position+1])
+                                    mini=float(c[1])
+                                    if object1_in_image==object1_in_rule and mini<float(b[2]):
+                                        satisfy_list[position]="True"
+                                        break
                 if "False" not in satisfy_list:
                     satisfy[rule_num]="True"
             if "True" in satisfy:
-                labels.append(possible_label)
+                label_list.append(possible_label)
                 find=True
-                break
         if find==False:
-            labels.append("None")
+            label_list.append("None")
+        labels.append(label_list)
     return labels
 
 def label(dict_list,rules):

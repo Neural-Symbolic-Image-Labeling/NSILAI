@@ -132,7 +132,7 @@ def get_total_list(total_list1):
 def get_int(elem):
     return int(elem)
     
-def get_result_list(target,result_list,total_list):
+def get_result_list(target,result_list,total_list,variable1,variable2):
     new_result_list=[]
     number=[]
     character=[]
@@ -179,8 +179,11 @@ def get_result_list(target,result_list,total_list):
                 a[1]=character[position]
                 clause=a[0]+"("+a[1]+","+"N"+")"+a[3]
                 result.append(clause)
-                mini,maxi=threshold(target,clauses,total_list)
-                threshold_clause=str(mini)+"<N<"+str(maxi)
+                mini,maxi=threshold(target,clauses,total_list,variable1,variable2)
+                if mini!=0:
+                    threshold_clause="N>"+str(mini)
+                else:
+                    threshold_clause="N<"+str(maxi)
                 result.append(threshold_clause)
         new_result_list.append(result)
     return new_result_list
@@ -242,57 +245,56 @@ def get_total_list1(input_list):
         total_list.append(image_list)
     return total_list
 
-def threshold(target,clause,total_list):
-    positive_list=[]
-    negative_list=[]
+def threshold(target,clause,total_list,variable1,variable2):
     a1=re.split(r'[(|,|)]',clause)
-    mini=maxi=0
     if a1[0]=='num':
+        positive_list=[]
+        negative_list=[]
+        positive_greater=negative_greater=0
         for image in total_list:
             for clauses in image:
                 a=re.split(r'[(|,|)]',clauses)
-                a1=re.split(r'[(|,|)]',clause)
                 if a[0]=='num' and a[1]==a1[1]:
                     if image[0]==target:
-                        positive_list.append(float(a[2]))
+                        positive_list.append(int(a[2]))
                     else:
-                        negative_list.append(float(a[2]))
-        result=True
-        if max(positive_list)>maxi:
-            maxi=max(positive_list)
-        if min(positive_list)<mini:
-            mini=min(positive_list)
-        for negative_num in negative_list:
-            if negative_num<maxi and negative_num>mini:
-                result=False
-                break
-        if result==False:
-            return False
+                        negative_list.append(int(a[2]))
+        for number in positive_list:
+            if number>variable1:
+                positive_greater+=1
+        for number in negative_list:
+            if number>variable1:
+                negative_greater+=1
+        if positive_greater>2/3*len(positive_list) and negative_greater<=1/3*len(negative_list):
+            return variable1,10000
+        elif positive_greater<=1/3*len(positive_list) and negative_greater>2/3*len(negative_list):
+            return 0,variable1
         else:
-            return mini,maxi
-    elif a1[0]=='area':
+            return False
+    if a1[0]=='area':
+        positive_list=[]
+        negative_list=[]
+        positive_greater=negative_greater=0
         for image in total_list:
             for clauses in image:
                 a=re.split(r'[(|,|)]',clauses)
-                a1=re.split(r'[(|,|)]',clause)
                 if a[0]=='area' and a[1]==a1[1]:
                     if image[0]==target:
                         positive_list.append(float(a[2]))
                     else:
                         negative_list.append(float(a[2]))
-        result=True
-        if max(positive_list)>maxi:
-            maxi=max(positive_list)
-        if min(positive_list)<mini:
-            mini=min(positive_list)
-        for negative_num in negative_list:
-            if negative_num<maxi and negative_num>mini:
-                result=False
-                break
-        if result==False:
-            return False
+        for number in positive_list:
+            if number>variable2:
+                positive_greater+=1
+        for number in negative_list:
+            if number>variable2:
+                negative_greater+=1
+        if positive_greater>2/3*len(positive_list) and negative_greater<=1/3*len(negative_list):
+            return variable2,10000
+        elif positive_greater<=1/3*len(positive_list) and negative_greater>2/3*len(negative_list):
+            return 0,variable2
         else:
-            return mini,maxi
+            return False
 
 def still_has(possible_clause,foil_gain_list):
     has=False
@@ -303,11 +305,128 @@ def still_has(possible_clause,foil_gain_list):
             break
     return has
 
-def foil(target,total_list):
+def still_has_num(result):
+    has=0
+    for clause_num,clauses in enumerate(result):
+        a=re.split(r'[(|,|)]',clauses)
+        if a[1]=='X':
+            has+=1
+    return has
+
+def get_object_list(total_list):
+    object_list=[]
+    for image in total_list:
+        for clauses in image:
+            a=re.split(r'[(|,|)]',clauses)
+            if a[0]!='overlap' and a[0]!='num' and a[0]!='area' and len(a)==4 and (a[0] not in object_list):
+                object_list.append(a[0])
+    return object_list
+
+def locking(target,total_list,lock):
+    new_total_list=copy.deepcopy(total_list)
+    c=re.split(r'[(|,|)]',target)
+    delete_list=[]
+    final_list=[]
+    for rule in lock[c[0]]:
+        if rule[0]==rule[1]:
+            for i,image in enumerate(new_total_list):
+                satisfy_list=["False" for i in range(len(rule))]
+                object_in_rule=[]
+                object_character=[]
+                for position,clauses in enumerate(rule[0]):
+                    a=re.split(r'[(|,|)]',clauses)
+                    if a[0]!='overlap' and a[0]!='num' and a[0]!='area' and len(a)==4:
+                        object_in_rule.append(a[0])
+                        object_character.append(a[2])
+                        for predicate in image:
+                            b=re.split(r'[(|,|)]',predicate)
+                            if b[0]==a[0]:
+                                satisfy_list[position]="True"
+                                break
+                    elif a[0]=='overlap':
+                        object_in_image=[]
+                        object_number=[]
+                        object1_in_rule=object_in_rule[object_character.index(a[1])]
+                        object2_in_rule=object_in_rule[object_character.index(a[2])]
+                        for predicate in image:
+                            b=re.split(r'[(|,|)]',predicate)
+                            if b[0]!='overlap' and b[0]!='num' and b[0]!='area':
+                                object_in_image.append(b[0])
+                                object_number.append(b[2])
+                            if b[0]==a[0]:
+                                object1_in_image=object_in_image[object_number.index(b[1])]
+                                object2_in_image=object_in_image[object_number.index(b[2])]
+                                if object1_in_image==object1_in_rule and object2_in_image==object2_in_rule:
+                                    satisfy_list[position]="True"
+                                    break
+                    elif a[0]=='num' or a[0]=='area':
+                        object_in_image=[]
+                        object_number=[]
+                        object1_in_rule=object_in_rule[object_character.index(a[1])]
+                        for predicate in image:
+                            b=re.split(r'[(|,|)]',predicate)
+                            if b[0]!='overlap' and b[0]!='num' and b[0]!='area':
+                                object_in_image.append(b[0])
+                                object_number.append(b[2])
+                            if b[0]==a[0]:
+                                object1_in_image=object_in_image[object_number.index(b[1])]
+                                c=re.split(r'[<]',rule[position+1])
+                                if len(c)!=1:
+                                    maxi=float(c[1])
+                                    if object1_in_image==object1_in_rule and float(b[2])<=maxi:
+                                        satisfy_list[position]="True"
+                                        break
+                                else:
+                                    c=re.split(r'[>]',rule[position+1])
+                                    mini=float(c[1])
+                                    if object1_in_image==object1_in_rule and mini<float(b[2]):
+                                        satisfy_list[position]="True"
+                                        break
+                if "False" not in satisfy_list:
+                    delete_list.append(i)
+    for i,image in enumerate(new_total_list):
+        if i not in delete_list:
+            final_list.append(image)
+    return final_list
+
+def cha_to_num(target,total_list,lists):
+    object_list=get_object_list(total_list)
+    c=re.split(r'[(|,|)]',target)
+    for rules in lists[c[0]]:
+        character_list=[]
+        number_list=[]
+        for rule in rules:
+            position=[]
+            for pos,predicate in enumerate(rule):
+                a=re.split(r'[(|,|)]',predicate)
+                if a[0] in object_list:
+                    if a[2] not in character_list:
+                        character_list.append(a[2])
+                        number_list.append(str(object_list.index(a[0])))
+                    a[2]=str(object_list.index(a[0]))
+                    rule[pos]=a[0]+'('+a[1]+','+a[2]+')'+a[3]
+                elif a[0]=='overlap':
+                    a[1]=number_list[character_list.index(a[1])]
+                    a[2]=number_list[character_list.index(a[2])]
+                    rule[pos]=a[0]+'('+a[1]+','+a[2]+')'+a[3]
+                elif a[0]=='num' or a[0]=='area':
+                    a[1]=number_list[character_list.index(a[1])]
+                    rule[pos]=a[0]+'('+a[1]+','+a[2]+')'+a[3]
+                else:
+                    position.append(pos)
+            for i in position:
+                del rule[i]
+    return lists
+
+def foil(target,total_list,variable1,variable2,delete,lock):
 #target should be a string, such as "guitarist"
     result_list=[]     #two dimentional list
-    new_total_list=copy.deepcopy(total_list)
+    object_list=get_object_list(total_list)
+    new_total_list=locking(target,total_list,lock)
     positive_list,negative_list=pos_neg_list(target,new_total_list)   #get the initial_positive_list,to help find out the result that can satisfy all the positives
+    c=re.split(r'[(|,|)]',target)
+    delete=cha_to_num(target,total_list,delete)
+    lock=cha_to_num(target,total_list,lock)
     i=0   #make sure that all the result in the result list has been proved that fulfill our requirements(can satisfy all the positives and reject all the negatives)
     while (len(positive_list)!=0):
         counting=0
@@ -334,6 +453,8 @@ def foil(target,total_list):
                 foil_gain_list.append(foil_gain(pre_p,pre_n,now_p,now_n))
             correct_clause=False              #first set false, if the correct one is found, jump out of the iteration
             parameter_list=get_parameter_list(result)
+            #print(possible_clause)
+            #print(foil_gain_list)
             while correct_clause == False:
                 for clause_number,clause_gain in enumerate(foil_gain_list):
                     if max(foil_gain_list)==-99:
@@ -341,7 +462,7 @@ def foil(target,total_list):
                     if clause_gain==max(foil_gain_list):
                         a=re.split(r'[(|,|)]',possible_clause[clause_number])
                         if a[0]=="overlap":
-                            if (a[1] in parameter_list) and (a[2] in parameter_list) and still_has(possible_clause,foil_gain_list)==False:
+                            if (a[1] in parameter_list) and (a[2] in parameter_list) and still_has_num(result)>=2:
                                 new_result=copy.deepcopy(result)    #The following is to first add it to result, if it is a special case 
                                 new_result.append(possible_clause[clause_number])       # such that only one positive has the clause and no negative has it, it may has the best gain.
                                 result_list.append(new_result)
@@ -351,7 +472,7 @@ def foil(target,total_list):
                                 foil_gain_list[clause_number]=-99
                                 break
                         elif a[0]=="num" or a[0]=='area':
-                            if a[1] in parameter_list and threshold(target,possible_clause[clause_number],total_list)!=False and still_has(possible_clause,foil_gain_list)==False:
+                            if a[1] in parameter_list and threshold(target,possible_clause[clause_number],total_list,variable1,variable2)!=False and still_has_num(result)>=3:
                                 new_result=copy.deepcopy(result)
                                 new_result.append(possible_clause[clause_number])
                                 result_list.append(new_result)
@@ -368,12 +489,121 @@ def foil(target,total_list):
                             break
             if counting!=0:          #Each time, because we add the updated version at the end of the list, so delete the old version
                 del result_list[i]
+            #print("This is result_list",result_list)
             new_total_list=get_new_total_list(result_list,total_list)
+            #print(new_total_list)
             positive_list,negative_list=pos_neg_list(target,new_total_list)   # can use for next iteration when the answer is not perfect
+            #print(negative_list)
             counting+=1           #just for the special case that at first the list is empty and we cannot delete the new added one. (Or we can say that we cannot delete the old empty version)
+        for rule in delete[c[0]]:
+            if len(rule[0])!=len(rule[1]):
+                print(result_list[i])
+                if len(result_list[i])==len(rule[0]):
+                    result_in=True
+                    for predicate in rule[0]:
+                        if predicate not in result_list[i]:
+                            a=re.split(r'[(|,|)]',predicate)
+                            print(a[0])
+                            if a[0]!='num' and a[0]!='area':
+                                result_in=False
+                                break
+                            else:
+                                result_ins=False
+                                for element in result_list[i]:
+                                    b=re.split(r'[(|,|)]',element)
+                                    if b[0]==a[0] and b[1]==a[1]:
+                                        result_ins=True
+                                        break
+                                if result_ins==False:
+                                    result_in=False
+                                    break
+                    if result_in==True:
+                        for del_predicate in rule[1]:
+                            a=re.split(r'[(|,|)]',del_predicate)
+                            if a[0]!='num' and a[0]!='area':
+                                result_list[i].remove(del_predicate)
+                            else:
+                                for ele_pos,element in enumerate(result_list[i]):
+                                    b=re.split(r'[(|,|)]',element)
+                                    if b[0]==a[0] and b[1]==a[1]:
+                                        del_position=ele_pos
+                                del result_list[i][del_position]
+        for rule in lock[c[0]]:
+            if len(rule[0])!=len(rule[1]):
+                pre_assign=[]
+                for predicate in rule[0]:
+                    if predicate not in rule[1]:
+                        pre_assign.append(predicate)
+                if len(pre_assign)<=len(result_list[i])<len(rule[0]):
+                    result_in=True
+                    for predicate in pre_assign:
+                        if predicate not in result_list[i]:
+                            a=re.split(r'[(|,|)]',predicate)
+                            print(a[0])
+                            if a[0]!='num' and a[0]!='area':
+                                result_in=False
+                                break
+                            else:
+                                result_ins=False
+                                for element in result_list[i]:
+                                    b=re.split(r'[(|,|)]',element)
+                                    if b[0]==a[0] and b[1]==a[1]:
+                                        result_ins=True
+                                        break
+                                if result_ins==False:
+                                    result_in=False
+                                    break
+                    if result_in==True:
+                        results_in=True
+                        for predicate in result_list[i]:
+                            if predicate not in rule[0]:
+                                a=re.split(r'[(|,|)]',predicate)
+                                if a[0]!='num' and a[0]!='area':
+                                    results_in=False
+                                    break
+                                else:
+                                    result_ins=False
+                                    for element in rule[0]:
+                                        b=re.split(r'[(|,|)]',element)
+                                        if b[0]==a[0] and b[1]==a[1]:
+                                            result_ins=True
+                                            break
+                                    if result_ins==False:
+                                        results_in=False
+                                        break
+                        if results_in==True:
+                            result_list[i]=rule[0]
         new_total_list=get_new_total_list1(result_list,total_list)
+        #print(new_total_list)
         positive_list,negative_list=pos_neg_list(target,new_total_list)
         i+=1
+    delete_position=[]
+    for rule in delete[c[0]]:
+        if len(rule[0])==len(rule[1]) and rule[0]!=[]:
+            for t,rules in enumerate(result_list):
+                result_in=True
+                for pred in rules:
+                    a=re.split(r'[(|,|)]',pred)
+                    if a[0]!='num' and a[0]!='area':
+                        if pred not in rule[0]:
+                            result_in=False
+                            break
+                    else:
+                        result_ins=False
+                        for predicate in rule[0]:
+                            b=re.split(r'[(|,|)]',predicate)
+                            if b[0]==a[0] and b[1]==a[1]:
+                                result_ins=True
+                        if result_ins==False:
+                            result_in=False
+                            break
+                if result_in==True:
+                    delete_position.append(t)
+    for t in delete_position:
+        del result_list[t]
+    for rule in lock[c[0]]:
+        if len(rule[0])==len(rule[1]) and rule[0]!=[]:
+            result_list.insert(0,rule[0])
     return result_list
 
 def plural(word):
@@ -411,23 +641,44 @@ def NL(result_list,target,total_list):
                 index=characters.index(a[1])
                 object_name=objects[index]
                 b=re.split(r'[<]',results[i+1])
-                if int(b[0])>1:
+                if len(b)!=1:
                     object_name= plural(object_name)
-                min=b[0]
-                max=b[2]
-                n+='The number of '+object_name+" is greater than "+min+", less than "+max
+                    max=b[1]
+                    n+='The number of '+object_name+" is less than "+max
+                else:
+                    b=re.split(r'[>]',results[i+1])
+                    object_name= plural(object_name)
+                    min=b[1]
+                    n+='The number of '+object_name+" is greater than "+min
             elif a[0]=='area':
                 index=characters.index(a[1])
                 object_name=objects[index]
                 b=re.split(r'[<]',results[i+1])
-                min=b[0]
-                max=b[2]
-                n+='The area of '+object_name+" is greater than "+min+", less than "+max
+                if len(b)!=1:
+                    max=b[1]
+                    n+='The area of '+object_name+"is less than "+max
+                else:
+                    b=re.split(r'[>]',results[i+1])
+                    min=b[1]
+                    n+='The area of '+object_name+" is greater than "+min
+            elif len(a)==1:
+                b=re.split(r'[<]',clauses)
+                if len(b)!=1:
+                    object_name= plural(object_name)
+                    max=b[1]
+                    n+='The number is less than '+max
+                else:
+                    b=re.split(r'[>]',clauses)
+                    object_name= plural(object_name)
+                    min=b[1]
+                    n+='The number is greater than '+min
             result_list.append(n)
         result.append(result_list)
     return result
 
-def FOIL(input_list):
+def FOIL(input_list,delete,lock):
+    global_variable1=10
+    global_variable2=30
     #start=time.time()
     dict_math={}
     dict_nl={}
@@ -438,7 +689,7 @@ def FOIL(input_list):
         if images[0] not in target_list:
             target_list.append(images[0])
     for target in target_list:
-        result_list=foil(target,total_list)
+        result_list=foil(target,total_list,global_variable1,global_variable2,delete,lock)
         if result_list==None:
             dict_math[target]=[['none']]
             dict_nl[target]=[['none']]
